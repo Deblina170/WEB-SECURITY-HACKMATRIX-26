@@ -1,0 +1,30 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# Environment variables & secrets (CRITICAL: Never commit secrets)
+.env
+*.env
+!.env.example
+
+# SQLite local databases
+*.db
+*.sqlite
+*.sqlite3
+threat_intel.db
+
+# VS Code & IDE files
+.vscode/
+.idea/
+
+# OS artifacts
+Thumbs.db
+Desktop.ini
+.DS_Store
