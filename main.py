@@ -276,6 +276,7 @@ def get_samples_endpoint():
     return {"samples": samples}
 
 @app.get("/health", summary="Health Check")
+@app.head("/health", summary="Health Check")
 def health_check():
     return {
         "status": "healthy",
@@ -305,6 +306,7 @@ if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/", response_class=HTMLResponse, summary="ThreatGuard Web Dashboard")
+@app.head("/", summary="ThreatGuard Web Dashboard Head Check")
 def serve_index():
     index_path = os.path.join(static_dir, "index.html")
     if os.path.exists(index_path):
