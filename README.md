@@ -108,6 +108,34 @@ sequenceDiagram
 2. **Isolated Fault Boundaries**: All cloud operations (`scan_history` insert and `threat_indicators` upsert) are housed in separate error-handling boundaries. Cloud timeouts, 503 errors, or rate limits **never crash the server or abort an audit**.
 3. **Sub-Second Heartbeat Probing**: A lightweight non-blocking TCP socket heartbeat checks Supabase reachability (1.2s timeout). When network isolation or an air-gapped environment is detected, ThreatGuard falls back to local SQLite with 0ms downtime.
 
+### 🌐 Enterprise Interoperability: OASIS STIX 2.1 CTI Standard
+ThreatGuard.AI does not trap threat intelligence inside a closed silo. Clicking **"Export STIX 2.1 Bundle"** serializes all detected indicators into the standardized **OASIS STIX 2.1 (Structured Threat Information Expression)** specification.
+
+- **Automated SIEM/SOAR Ingestion:** Machine-readable JSON schema designed for automated consumption by enterprise SOC platforms (**Splunk, Microsoft Sentinel, IBM QRadar, Palo Alto Networks, MISP**).
+- **Actionable Pattern Observables:** Formatted into standardized STIX patterns (`[url:value = '...'] OR [domain-name:value = '...']`) allowing firewalls and proxy filters to execute zero-day domain blocking rules automatically.
+
+```json
+{
+  "type": "bundle",
+  "id": "bundle--b578c74a-4933-4de7-8a6a-d27da7c558aa",
+  "objects": [
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--3f2901a1-8d2a-4bc3-9562-b9cf2a912e45",
+      "created": "2026-11-08T12:00:00.000Z",
+      "name": "Malicious Domain: paypa1-update.tk",
+      "description": "Active credential harvesting attack impersonating PayPal billing verification.",
+      "pattern": "[url:value = 'http://paypa1-update.tk'] OR [domain-name:value = 'paypa1-update.tk']",
+      "pattern_type": "stix",
+      "valid_from": "2026-11-08T12:00:00.000Z",
+      "confidence": 98,
+      "indicator_types": ["malicious-activity", "phishing"]
+    }
+  ]
+}
+```
+
 ### Module Structure
 ```
 WEB-SECURITY-HACKMATRIX-26/
