@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>ThreatGuard AI // Responsive Cyber Threat & Digital Trust Command Center</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          screens: {
+            'xs': '420px',
+            'sm': '640px',
+            'md': '768px',
+            'lg': '1024px',
+            'xl': '1280px',
+            '2xl': '1536px',
+          },
+          colors: {
+            cyber: {
+              950: '#060813',
+              900: '#090e1d',
+              850: '#0d1424',
+              800: '#121c34',
+              750: '#182646',
+              700: '#1f3056',
+              cyan: '#00f2fe',
+              blue: '#38bdf8',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              crimson: '#ef4444',
+              purple: '#8b5cf6'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          boxShadow: {
+            'glow-cyan': '0 0 25px rgba(0, 242, 254, 0.25)',
+            'glow-crimson': '0 0 25px rgba(239, 68, 68, 0.3)',
+            'glow-emerald': '0 0 25px rgba(16, 185, 129, 0.25)',
+            'glow-amber': '0 0 25px rgba(245, 158, 11, 0.25)',
+            'glass': '0 10px 30px rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18, ReactDOM, and Babel Standalone (Cloudflare CDN) -->
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+  <style>
+    /* Prevent horizontal page overflow on small devices */
+    html, body {
+      overflow-x: hidden;
+      max-width: 100vw;
+    }
+
+    /* Cyber scanlines grid pattern */
+    .cyber-grid {
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    /* Ambient glowing orbs (hidden or scaled down on mobile for high GPU frame-rates) */
+    .glow-orb-cyan {
+      width: clamp(280px, 40vw, 500px);
+      height: clamp(280px, 40vw, 500px);
+      background: radial-gradient(circle, rgba(0, 242, 254, 0.16) 0%, transparent 70%);
+      filter: blur(100px);
+    }
+    .glow-orb-purple {
+      width: clamp(300px, 45vw, 550px);
+      height: clamp(300px, 45vw, 550px);
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.14) 0%, transparent 70%);
+      filter: blur(110px);
+    }
+
+    /* Hide scrollbars while preserving touch smooth scroll */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Print styles for Executive Audit PDF Report */
+    @media print {
+      body { background: #fff !important; color: #000 !important; }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      .print-card { border: 1px solid #cbd5e1 !important; background: #fff !important; color: #000 !important; box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-cyber-950 text-slate-100 font-sans min-h-screen relative overflow-x-hidden antialiased selection:bg-cyber-cyan selection:text-cyber-950">
+  
+  <!-- Ambient Cyber Background -->
+  <div class="fixed inset-0 cyber-grid pointer-events-none z-0"></div>
+  <div class="fixed -top-20 -left-20 glow-orb-cyan pointer-events-none z-0"></div>
+  <div class="fixed top-1/3 -right-24 glow-orb-purple pointer-events-none z-0"></div>
+
+  <!-- React Root Container -->
+  <div id="root" class="relative z-10 flex flex-col min-h-screen w-full"></div>
+
+  <!-- React Application Logic -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useCallback } = React;
+
+    // --- Inline Responsive Vector Icons ---
+    const ShieldIcon = ({ className = "w-5 h-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+    );
+
+    const SearchIcon = ({ className = "w-5 h-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+    );
+
+    const AlertOctagonIcon = ({ className = "w-5 h-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+    );
+
+    const LockIcon = ({ className = "w-5 h-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    );
+
+    const GlobeIcon = ({ className = "w-5 h-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="2" y1="12" x2="22" y2="12"></line>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+      </svg>
+    );
+
+    const FileTextIcon = ({ className = "w-5 h-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
+    );
+
+    const ZapIcon = ({ className = "w-5 h-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+      </svg>
+    );
+
+    const DatabaseIcon = ({ className = "w-5 h-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+      </svg>
+    );
+
+    // --- Main Responsive Dashboard Component ---
+    function DashboardApp() {
+      const [urlInput, setUrlInput] = useState("");
+      const [loading, setLoading] = useState(false);
+      const [loadingStep, setLoadingStep] = useState("");
+      const [scanData, setScanData] = useState(null);
+      const [error, setError] = useState(null);
+      const [activeTab, setActiveTab] = useState("threat");
+      const [dbStatus, setDbStatus] = useState({ 
+        is_cloud_active: false, 
+        engine: "sqlite",
+        provider: "SQLite (Air-Gapped)",
+        fallback: "threat_intel.db",
+        air_gapped_mode: true,
+        status_reason: "Testing network connectivity...",
+        latency_ms: 0,
+        checked: false
+      });
+      const [dbModalOpen, setDbModalOpen] = useState(false);
+      const [dbPingLoading, setDbPingLoading] = useState(false);
+      const [dbPingNotice, setDbPingNotice] = useState("");
+      const [threatFeed, setThreatFeed] = useState([]);
+      const [stixModalOpen, setStixModalOpen] = useState(false);
+      const [stixContent, setStixContent] = useState("");
+      const [reportModalOpen, setReportModalOpen] = useState(false);
+      const [copiedStix, setCopiedStix] = useState(false);
+
+      // Bookmarklet configuration
+      const bookmarkletCode = useMemo(() => {
+        const origin = window.location.origin;
+        return `javascript:(function(){var u=encodeURIComponent(window.location.href);window.open('${origin}/?url='+u,'_blank');})();`;
+      }, []);
+
+      // High-Contrast Test Scenarios Presets
+      const presets = [
+        { 
+          label: "PayPal Phish", 
+          tag: "PHISH", 
+          tagStyle: "bg-red-500 text-white font-black shadow-sm", 
+          btnStyle: "bg-red-950/50 border-red-500/50 hover:bg-red-900/60 hover:border-red-400 text-red-100", 
+          url: "http://paypa1-security-verification.update-account.tk/login" 
+        },
+        { 
+          label: "eMudhra 1024b", 
+          tag: "eMUDHRA", 
+          tagStyle: "bg-amber-400 text-amber-950 font-black shadow-sm", 
+          btnStyle: "bg-amber-950/50 border-amber-500/50 hover:bg-amber-900/60 hover:border-amber-400 text-amber-100", 
+          url: "https://emudhra-auth-portal.fraud-verify.com" 
+        },
+        { 
+          label: "Job Scam", 
+          tag: "SCAM", 
+          tagStyle: "bg-orange-500 text-white font-black shadow-sm", 
+          btnStyle: "bg-orange-950/50 border-orange-500/50 hover:bg-orange-900/60 hover:border-orange-400 text-orange-100", 
+          url: "http://amazon-global-careers-recruit.xyz/apply" 
+        },
+        { 
+          label: "Chase Bank", 
+          tag: "SAFE", 
+          tagStyle: "bg-emerald-400 text-emerald-950 font-black shadow-sm", 
+          btnStyle: "bg-emerald-950/50 border-emerald-500/50 hover:bg-emerald-900/60 hover:border-emerald-400 text-emerald-100", 
+          url: "https://chase.com" 
+        },
+        { 
+          label: "Plaintext HTTP", 
+          tag: "HTTP", 
+          tagStyle: "bg-slate-300 text-slate-950 font-black shadow-sm", 
+          btnStyle: "bg-slate-900/60 border-slate-500/50 hover:bg-slate-800/70 hover:border-slate-400 text-slate-100", 
+          url: "http://legacy-banking.insecure.test" 
+        }
+      ];
+
+      // Refresh or check database connection status
+      const checkDbStatus = useCallback(async (force = false) => {
+        setDbPingLoading(true);
+        try {
+          const res = await fetch(`/api/system/db-status?force_refresh=${force}`);
+          const data = await res.json();
+          setDbStatus({
+            is_cloud_active: !!data.is_cloud_active,
+            engine: data.engine || (data.is_cloud_active ? "supabase" : "sqlite"),
+            provider: data.provider || (data.is_cloud_active ? "Supabase (Cloud PostgreSQL)" : "SQLite (Local / Air-Gapped)"),
+            fallback: data.database_file || "threat_intel.db",
+            air_gapped_mode: !data.is_cloud_active,
+            air_gap_override: data.air_gap_override,
+            status_reason: data.status_reason || "",
+            latency_ms: data.latency_ms || 0,
+            checked: true
+          });
+          const modeLabel = data.is_cloud_active 
+            ? "☁️ Supabase Cloud Active (PostgreSQL RLS)" 
+            : "📴 SQLite Air-Gapped Mode Active (Local Failover)";
+          setDbPingNotice(`${modeLabel} • ${data.status_reason || 'Checked'} (${new Date().toLocaleTimeString()})`);
+        } catch (err) {
+          setDbStatus({
+            is_cloud_active: false,
+            engine: "sqlite",
+            provider: "SQLite (Local / Air-Gapped)",
+            fallback: "threat_intel.db",
+            air_gapped_mode: true,
+            status_reason: "Offline Host / Air-Gapped Environment",
+            latency_ms: 0,
+            checked: true
+          });
+          setDbPingNotice(`📴 Air-Gapped Mode Active • Local SQLite Offline (${new Date().toLocaleTimeString()})`);
+        } finally {
+          setDbPingLoading(false);
+        }
+      }, []);
+
+      // Toggle Air-Gapped Simulation Mode
+      const toggleAirGapMode = useCallback(async () => {
+        setDbPingLoading(true);
+        try {
+          const res = await fetch("/api/system/toggle-airgap", { method: "POST" });
+          const data = await res.json();
+          setDbStatus({
+            is_cloud_active: !!data.is_cloud_active,
+            engine: data.engine || (data.is_cloud_active ? "supabase" : "sqlite"),
+            provider: data.provider,
+            fallback: data.database_file || "threat_intel.db",
+            air_gapped_mode: !data.is_cloud_active,
+            air_gap_override: data.air_gap_override,
+            status_reason: data.status_reason || "",
+            latency_ms: data.latency_ms || 0,
+            checked: true
+          });
+          setDbPingNotice(data.is_cloud_active 
+            ? `☁️ Switched to Cloud Mode (Supabase Active)` 
+            : `📴 Switched to Air-Gapped Mode (SQLite Active)`);
+        } catch (err) {
+          console.error("Air-gap toggle failed:", err);
+        } finally {
+          setDbPingLoading(false);
+        }
+      }, []);
+
+      // Initial load: database status, threat feed, query param auto-scan, and browser network listener
+      useEffect(() => {
+        checkDbStatus(true);
+
+        const handleOnline = () => checkDbStatus(true);
+        const handleOffline = () => {
+          setDbStatus(prev => ({
+            ...prev,
+            is_cloud_active: false,
+            engine: "sqlite",
+            provider: "SQLite (Local / Air-Gapped)",
+            air_gapped_mode: true,
+            status_reason: "Browser detected offline state"
+          }));
+        };
+
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("offline", handleOffline);
+
+        fetch("/api/threats/feed?limit=6")
+          .then(res => res.json())
+          .then(data => setThreatFeed(data.feed || []))
+          .catch(() => {});
+
+        const params = new URLSearchParams(window.location.search);
+        const autoUrl = params.get("url");
+        if (autoUrl) {
+          setUrlInput(autoUrl);
+          runAudit(autoUrl);
+        }
+
+        return () => {
+          window.removeEventListener("online", handleOnline);
+          window.removeEventListener("offline", handleOffline);
+        };
+      }, [checkDbStatus]);
+
+      // Core Scan Execution Function
+      const runAudit = useCallback(async (targetUrl) => {
+        const query = (targetUrl || urlInput || "https://chase.com").trim();
+        setUrlInput(query);
+        setLoading(true);
+        setError(null);
+        setLoadingStep("Validating X.509 cryptography, checking eMudhra key patterns, and parsing DOM forms...");
+
+        try {
+          const resp = await fetch(`/analyze?url=${encodeURIComponent(query)}`);
+          if (!resp.ok) {
+            const errJson = await resp.json();
+            throw new Error(errJson.detail || "Target audit request failed");
+          }
+          const data = await resp.json();
+          setScanData(data);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      }, [urlInput]);
+
+      // Smooth scroll and activate deep inspection tab
+      const scrollToTab = useCallback((tabKey) => {
+        setActiveTab(tabKey);
+        setTimeout(() => {
+          const el = document.getElementById("inspection-tabs-section");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 60);
+      }, []);
+
+      const handleOpenStix = async () => {
+        setStixModalOpen(true);
+        setStixContent("Loading standardized OASIS STIX 2.1 bundle...");
+        try {
+          const resp = await fetch("/api/threats/stix");
+          const json = await resp.json();
+          setStixContent(JSON.stringify(json, null, 2));
+        } catch (e) {
+          setStixContent("// Failed to load STIX: " + e.message);
+        }
+      };
+
+      const handleCopyStix = () => {
+        navigator.clipboard.writeText(stixContent);
+        setCopiedStix(true);
+        setTimeout(() => setCopiedStix(false), 2000);
+      };
+
+      const handleVote = async (reportId, voteType) => {
+        try {
+          const res = await fetch("/api/intel/vote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ report_id: reportId, vote_type: voteType })
+          });
+          const json = await res.json();
+          if (json.success && scanData) {
+            runAudit(scanData.target_url);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      const handleReportSubmit = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const payload = {
+          target_url: formData.get("url"),
+          category: formData.get("category"),
+          impersonated_brand: formData.get("brand") || null,
+          description: formData.get("desc")
+        };
+
+        try {
+          const resp = await fetch("/api/intel/report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const res = await resp.json();
+          if (res.success) {
+            alert("✓ Threat report successfully registered in global intelligence feed.");
+            setReportModalOpen(false);
+            if (scanData && scanData.target_url === payload.target_url) {
+              runAudit(payload.target_url);
+            }
+          }
+        } catch (err) {
+          alert("Submission error: " + err.message);
+        }
+      };
+
+      return (
+        <div className="flex flex-col min-h-screen w-full">
+          
+          {/* Responsive Header / Nav Bar */}
+          <header className="border-b border-white/10 bg-cyber-950/90 backdrop-blur-xl sticky top-0 z-50 no-print w-full">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-wrap items-center justify-between gap-3">
+              
+              {/* Brand Logo & Name */}
+              <div className="flex items-center space-x-2.5 sm:space-x-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-cyber-cyan via-sky-500 to-indigo-600 flex items-center justify-center text-cyber-950 shadow-glow-cyan shrink-0">
+                  <ShieldIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div>
+                  <div className="text-base sm:text-xl font-extrabold tracking-tight text-white flex items-center">
+                    ThreatGuard<span className="text-cyber-cyan">.</span>AI
+                  </div>
+                  <div className="text-[8px] sm:text-[10px] uppercase tracking-wider font-bold text-slate-400">
+                    Cyber Threat & Trust Command
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Controls & Action Pills */}
+              <div className="flex items-center flex-wrap gap-2">
+                {/* Dynamic Real-Time Network & Security Mode Pill */}
+                {dbStatus.is_cloud_active ? (
+                  <div className="hidden xs:flex items-center space-x-1.5 bg-emerald-500/10 border border-emerald-500/35 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold text-cyber-emerald shadow-[0_0_12px_rgba(16,185,129,0.25)]">
+                    <span className="w-2 h-2 rounded-full bg-cyber-emerald animate-pulse shadow-[0_0_8px_#10b981]"></span>
+                    <span>ONLINE</span>
+                  </div>
+                ) : (
+                  <div className="hidden xs:flex items-center space-x-1.5 bg-amber-500/15 border border-amber-500/40 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_#f59e0b]"></span>
+                    <span>📴 AIR-GAPPED</span>
+                  </div>
+                )}
+
+                {/* Dual Database Persistence Hub (Supabase + SQLite side-by-side with active glow) */}
+                <div 
+                  onClick={() => setDbModalOpen(true)}
+                  title="Click to view Dual-Database Architecture details"
+                  className="flex items-center p-0.5 sm:p-1 bg-cyber-900/90 rounded-xl border border-white/10 cursor-pointer hover:border-cyber-cyan/40 transition-all shadow-md group"
+                >
+                  {/* Supabase Engine Chip */}
+                  <div className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition-all ${
+                    dbStatus.is_cloud_active
+                      ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-400/60 shadow-[0_0_18px_rgba(16,185,129,0.55)] ring-1 ring-emerald-400/40 glow-db-active-emerald'
+                      : 'bg-white/[0.03] text-slate-400 border border-transparent opacity-65 group-hover:opacity-85'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full ${
+                      dbStatus.is_cloud_active
+                        ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]'
+                        : 'bg-slate-500'
+                    }`} />
+                    <span>☁️ Supabase</span>
+                    <span className={`text-[8px] sm:text-[9px] px-1.5 py-0.2 rounded font-sans uppercase font-extrabold tracking-wider ${
+                      dbStatus.is_cloud_active 
+                        ? 'bg-emerald-500/30 text-emerald-200' 
+                        : 'bg-slate-800 text-slate-400'
+                    }`}>
+                      {dbStatus.is_cloud_active ? 'ACTIVE' : 'STANDBY'}
+                    </span>
+                  </div>
+
+                  {/* SQLite Engine Chip */}
+                  <div className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-mono font-bold transition-all ml-1 ${
+                    !dbStatus.is_cloud_active
+                      ? 'bg-cyber-cyan/25 text-cyan-200 border border-cyber-cyan/60 shadow-[0_0_18px_rgba(0,242,254,0.55)] ring-1 ring-cyber-cyan/40 glow-db-active-cyan'
+                      : 'bg-white/[0.03] text-slate-400 border border-transparent opacity-65 group-hover:opacity-85'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full ${
+                      !dbStatus.is_cloud_active
+                        ? 'bg-cyber-cyan animate-pulse shadow-[0_0_8px_#00f2fe]'
+                        : 'bg-slate-500'
+                    }`} />
+                    <span>🗄️ SQLite</span>
+                    <span className={`text-[8px] sm:text-[9px] px-1.5 py-0.2 rounded font-sans uppercase font-extrabold tracking-wider ${
+                      !dbStatus.is_cloud_active 
+                        ? 'bg-cyan-500/30 text-cyan-200' 
+                        : 'bg-slate-800 text-slate-400'
+                    }`}>
+                      {!dbStatus.is_cloud_active ? 'ACTIVE' : 'MIRROR'}
+                    </span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={handleOpenStix}
+                  className="inline-flex items-center space-x-1 font-mono text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-lg border border-sky-400/30 bg-sky-400/10 text-cyber-blue hover:bg-cyber-blue hover:text-cyber-950 transition-all shadow-sm"
+                >
+                  <GlobeIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>STIX 2.1</span>
+                </button>
+
+                <a 
+                  href="/docs" 
+                  target="_blank" 
+                  className="inline-flex items-center space-x-1 font-mono text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-lg border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <span>API Docs</span>
+                </a>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Content Area (Adaptive Layout for Landing vs Deep Audit View) */}
+          <main className={`flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 ${!scanData ? 'flex flex-col justify-between' : 'space-y-6 sm:space-y-8'}`}>
+            
+            {/* Search Console & Presets */}
+            <section className="space-y-3 sm:space-y-4 no-print">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2">
+                <div className="flex items-center space-x-2 text-[11px] sm:text-xs font-mono font-bold text-slate-400 tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-cyber-cyan animate-ping shrink-0"></span>
+                  <span>MULTI-VECTOR THREAT DETECTION PLATFORM</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono text-slate-400">
+                  <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">🎣 AI Phishing</span>
+                  <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">🔐 X.509 Cryptography</span>
+                  <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">⚡ eMudhra CA Audit</span>
+                  <span className="px-2 py-0.5 rounded border border-white/10 bg-white/5">🛡️ Security Headers</span>
+                </div>
+              </div>
+
+              {/* Fully Responsive & Perfectly Aligned Search Bar Form */}
+              <form 
+                onSubmit={(e) => { e.preventDefault(); runAudit(); }}
+                className="relative flex flex-col sm:flex-row items-stretch sm:items-center bg-cyber-900/95 border border-cyber-cyan/40 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-glow-cyan focus-within:border-cyber-cyan transition-all gap-2 sm:gap-3"
+              >
+                <div className="flex items-center flex-1 min-w-0 h-11 sm:h-12">
+                  <div className="pl-2 sm:pl-3 pr-2 text-cyber-cyan shrink-0 flex items-center justify-center">
+                    <SearchIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </div>
+                  <input
+                    type="text"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    placeholder="Enter URL or domain (e.g. chase.com, paypa1-update.tk, https://emudhra.com)..."
+                    className="w-full h-full bg-transparent border-none text-white font-mono text-xs sm:text-base focus:outline-none placeholder-slate-500 px-1 sm:px-2 py-0"
+                    spellCheck="false"
+                    autoComplete="off"
+                  />
+                  <span className="hidden md:inline-flex items-center px-2.5 py-1 mr-2 text-[10px] font-mono font-bold text-slate-400 bg-white/5 border border-white/10 rounded-md shrink-0">
+                    Enter ↵
+                  </span>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full sm:w-auto h-11 sm:h-12 px-5 sm:px-7 rounded-lg sm:rounded-xl bg-gradient-to-r from-cyber-cyan via-sky-400 to-cyber-blue text-cyber-950 font-black text-xs sm:text-sm tracking-wide shadow-md hover:shadow-glow-cyan transition-all flex items-center justify-center space-x-2 shrink-0 cursor-pointer disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-cyber-950 border-t-transparent rounded-full animate-spin"></span>
+                      <span>SCANNING...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>AUDIT TARGET</span>
+                      <ZapIcon className="w-4 h-4 shrink-0" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* High-Contrast Presets Strip & Bookmarklet */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs pt-1">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px] sm:text-[11px] mr-1">Test Scenarios:</span>
+                  {presets.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => runAudit(preset.url)}
+                      className={`inline-flex items-center space-x-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border text-[11px] sm:text-xs transition-all hover:-translate-y-0.5 cursor-pointer shadow-sm group ${preset.btnStyle}`}
+                    >
+                      <span className={`text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded uppercase tracking-wider ${preset.tagStyle}`}>
+                        {preset.tag}
+                      </span>
+                      <span className="font-semibold text-slate-100 group-hover:text-white">{preset.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Bookmarklet Button */}
+                <div className="flex items-center space-x-2 self-start sm:self-auto">
+                  <span className="text-slate-400 font-bold text-[10px] sm:text-[11px] uppercase">Analyst Tool:</span>
+                  <a
+                    href={bookmarkletCode}
+                    onClick={(e) => {
+                      if (!urlInput) {
+                        e.preventDefault();
+                        runAudit("https://chase.com");
+                      }
+                    }}
+                    title="Drag to your browser's Bookmarks bar to scan any live tab in 1 click!"
+                    className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1 rounded-lg border border-cyber-cyan/40 bg-cyber-cyan/10 text-cyber-cyan font-mono text-[10px] sm:text-[11px] font-bold hover:bg-cyber-cyan hover:text-cyber-950 transition-all cursor-grab active:cursor-grabbing shadow-sm"
+                  >
+                    <ShieldIcon className="w-3.5 h-3.5" />
+                    <span>🛡️ ThreatGuard Quick-Scan</span>
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            {/* Error Message */}
+            {error && (
+              <div className="p-3.5 sm:p-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-200 flex items-center space-x-3 text-xs sm:text-sm">
+                <AlertOctagonIcon className="w-5 h-5 sm:w-6 sm:h-6 text-red-400 shrink-0" />
+                <span className="font-mono break-all">{error}</span>
+              </div>
+            )}
+
+            {/* Loading Radar Animation */}
+            {loading && (
+              <div className="p-8 sm:p-12 text-center rounded-2xl border border-cyber-cyan/30 bg-cyber-900/60 backdrop-blur-xl shadow-glow-cyan space-y-4">
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto">
+                  <div className="absolute inset-0 rounded-full border-2 border-cyber-cyan/40 animate-ping"></div>
+                  <div className="absolute inset-2 rounded-full border-2 border-cyber-cyan/60 animate-pulse"></div>
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-cyber-cyan/20 to-transparent animate-spin"></div>
+                  <div className="absolute inset-4 sm:inset-6 rounded-full bg-cyber-cyan shadow-[0_0_20px_#00f2fe] flex items-center justify-center text-cyber-950">
+                    <ShieldIcon className="w-5 h-5" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm sm:text-lg font-extrabold text-white tracking-wider">SCANNING DIGITAL TRUST INFRASTRUCTURE</div>
+                  <div className="text-xs sm:text-sm font-mono text-slate-400 mt-1 max-w-md mx-auto">{loadingStep}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Results Command Center */}
+            {scanData && !loading && (
+              <div className="space-y-5 sm:space-y-6">
+                
+                {/* 1. Audit Hero Scorecard */}
+                <div className="p-4 sm:p-7 md:p-8 rounded-2xl border border-white/10 bg-cyber-900/80 backdrop-blur-xl shadow-glass relative overflow-hidden print-card space-y-5">
+                  
+                  {/* Top Target Domain Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 sm:pb-6 border-b border-white/10 gap-3 sm:gap-4">
+                    <div className="flex items-center space-x-3 flex-wrap gap-y-2 min-w-0">
+                      <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${
+                        scanData.verdict.risk_level === 'CRITICAL' ? 'bg-red-500 shadow-[0_0_12px_#ef4444]' :
+                        scanData.verdict.risk_level === 'HIGH' ? 'bg-orange-500 shadow-[0_0_12px_#f97316]' :
+                        scanData.verdict.risk_level === 'MODERATE' ? 'bg-amber-500 shadow-[0_0_12px_#f59e0b]' :
+                        'bg-emerald-500 shadow-[0_0_12px_#10b981]'
+                      }`}></span>
+                      <div className="min-w-0">
+                        <div className="text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">Audited Target Domain</div>
+                        <h2 className="text-lg sm:text-2xl font-mono font-extrabold text-white break-all sm:break-normal truncate max-w-[280px] xs:max-w-xs sm:max-w-none">{scanData.domain}</h2>
+                      </div>
+                      <span className={`font-mono text-[10px] sm:text-xs font-black uppercase px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-lg border self-start sm:self-center shrink-0 ${
+                        scanData.verdict.risk_level === 'CRITICAL' ? 'bg-red-500/20 text-red-400 border-red-500 shadow-glow-crimson animate-pulse' :
+                        scanData.verdict.risk_level === 'HIGH' ? 'bg-orange-500/20 text-orange-400 border-orange-500' :
+                        scanData.verdict.risk_level === 'MODERATE' ? 'bg-amber-500/20 text-amber-400 border-amber-500' :
+                        'bg-emerald-500/20 text-emerald-400 border-emerald-500 shadow-glow-emerald'
+                      }`}>
+                        {scanData.verdict.risk_level} THREAT
+                      </span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center space-x-1.5 sm:space-x-2 no-print self-stretch sm:self-auto justify-end">
+                      <button
+                        onClick={() => window.print()}
+                        className="flex-1 sm:flex-none justify-center inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-cyber-cyan text-cyber-950 hover:bg-sky-400 shadow-sm transition-all cursor-pointer"
+                      >
+                        <FileTextIcon className="w-3.5 h-3.5" />
+                        <span>PDF Report</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(scanData, null, 2));
+                          const dl = document.createElement("a");
+                          dl.setAttribute("href", dataStr);
+                          dl.setAttribute("download", `threat_audit_${scanData.domain}_${Date.now()}.json`);
+                          dl.click();
+                        }}
+                        className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg font-mono text-xs font-semibold bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                      >
+                        <span>JSON</span>
+                      </button>
+                      <button
+                        onClick={() => setReportModalOpen(true)}
+                        className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-lg font-mono text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
+                      >
+                        <span>Flag Threat</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Digital Trust Radial Gauge & 4 Vector Breakdown */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center py-2 sm:py-4">
+                    
+                    {/* SVG Radial Gauge */}
+                    <div className="lg:col-span-4 flex flex-col items-center justify-center text-center">
+                      <div className="relative w-32 h-32 sm:w-36 sm:h-36">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="52"
+                            fill="none"
+                            stroke={
+                              scanData.verdict.trust_score >= 80 ? '#10b981' :
+                              scanData.verdict.trust_score >= 50 ? '#f59e0b' :
+                              scanData.verdict.trust_score >= 20 ? '#f97316' : '#ef4444'
+                            }
+                            strokeWidth="10"
+                            strokeDasharray={326.7}
+                            strokeDashoffset={326.7 - (scanData.verdict.trust_score / 100) * 326.7}
+                            strokeLinecap="round"
+                            className="transition-all duration-1000 ease-out"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="font-mono text-2xl sm:text-3xl font-black text-white">{scanData.verdict.trust_score}</span>
+                          <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-widest text-slate-400">DIGITAL TRUST</span>
+                        </div>
+                      </div>
+                      <div className="mt-2.5 font-mono text-xs text-slate-400">
+                        Risk Exposure: <span className="font-bold text-white">{scanData.verdict.risk_score}/100</span>
+                      </div>
+                    </div>
+
+                    {/* 4 Interactive Vector Status Tiles (2 Columns on mobile, 2 on tablet, 2 on lg) */}
+                    <div className="lg:col-span-8 grid grid-cols-1 xs:grid-cols-2 gap-2.5 sm:gap-3">
+                      
+                      {/* Tile 1: Phishing */}
+                      <div 
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => scrollToTab("threat")}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToTab("threat"); }}}
+                        className={`p-3 sm:p-4 rounded-xl border transition-all cursor-pointer group relative overflow-hidden select-none ${
+                          activeTab === 'threat'
+                            ? 'border-cyber-cyan bg-cyber-800/90 shadow-[0_0_22px_rgba(0,242,254,0.35)] ring-2 ring-cyber-cyan/50'
+                            : 'border-white/10 bg-cyber-850/60 hover:border-cyber-cyan/40 hover:bg-cyber-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5">
+                          <span className="flex items-center space-x-1.5 truncate">
+                            <span>🎣</span>
+                            <span className="truncate">Phishing & Brand (35%)</span>
+                          </span>
+                          <div className="flex items-center space-x-1.5 shrink-0">
+                            {activeTab === 'threat' && (
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyber-cyan/20 text-cyber-cyan font-black uppercase">ACTIVE</span>
+                            )}
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${scanData.threat_analysis.is_phishing ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-emerald-500 shadow-[0_0_8px_#10b981]'}`}></span>
+                          </div>
+                        </div>
+                        <div className="font-mono text-xs sm:text-sm font-extrabold text-white truncate">
+                          {scanData.threat_analysis.impersonated_brand ? `Spoofing ${scanData.threat_analysis.impersonated_brand}` : (scanData.threat_analysis.is_phishing ? 'Flagged Phish' : 'Clean')}
+                        </div>
+                        <div className="mt-2.5 flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); scrollToTab("threat"); }}
+                            className={`inline-flex items-center space-x-1.5 text-[11px] font-mono font-bold px-2.5 py-1 rounded-md transition-all cursor-pointer shadow-sm ${
+                              activeTab === 'threat'
+                                ? 'bg-cyber-cyan text-cyber-950 shadow-[0_0_12px_rgba(0,242,254,0.6)] font-black'
+                                : 'bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 hover:bg-cyber-cyan hover:text-cyber-950'
+                            }`}
+                          >
+                            <span>Deep Dive Heuristics</span>
+                            <span className="font-sans font-black text-xs transition-transform group-hover:translate-x-0.5">➔</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Tile 2: Cryptography */}
+                      <div 
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => scrollToTab("certs")}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToTab("certs"); }}}
+                        className={`p-3 sm:p-4 rounded-xl border transition-all cursor-pointer group relative overflow-hidden select-none ${
+                          activeTab === 'certs'
+                            ? 'border-cyber-cyan bg-cyber-800/90 shadow-[0_0_22px_rgba(0,242,254,0.35)] ring-2 ring-cyber-cyan/50'
+                            : 'border-white/10 bg-cyber-850/60 hover:border-cyber-cyan/40 hover:bg-cyber-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5">
+                          <span className="flex items-center space-x-1.5 truncate">
+                            <span>🔐</span>
+                            <span className="truncate">X.509 Cryptography (25%)</span>
+                          </span>
+                          <div className="flex items-center space-x-1.5 shrink-0">
+                            {activeTab === 'certs' && (
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyber-cyan/20 text-cyber-cyan font-black uppercase">ACTIVE</span>
+                            )}
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${scanData.certificate_analysis.cryptography.key_size_bits < 2048 || scanData.certificate_analysis.trust_chain.is_self_signed ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-emerald-500 shadow-[0_0_8px_#10b981]'}`}></span>
+                          </div>
+                        </div>
+                        <div className="font-mono text-xs sm:text-sm font-extrabold text-white truncate">
+                          {scanData.certificate_analysis.cryptography.key_size_bits}b {scanData.certificate_analysis.cryptography.key_type.split(" ")[0]}
+                        </div>
+                        <div className="mt-2.5 flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); scrollToTab("certs"); }}
+                            className={`inline-flex items-center space-x-1.5 text-[11px] font-mono font-bold px-2.5 py-1 rounded-md transition-all cursor-pointer shadow-sm ${
+                              activeTab === 'certs'
+                                ? 'bg-cyber-cyan text-cyber-950 shadow-[0_0_12px_rgba(0,242,254,0.6)] font-black'
+                                : 'bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 hover:bg-cyber-cyan hover:text-cyber-950'
+                            }`}
+                          >
+                            <span>Inspect X.509 & Chain</span>
+                            <span className="font-sans font-black text-xs transition-transform group-hover:translate-x-0.5">➔</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Tile 3: Web Posture */}
+                      <div 
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => scrollToTab("web")}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToTab("web"); }}}
+                        className={`p-3 sm:p-4 rounded-xl border transition-all cursor-pointer group relative overflow-hidden select-none ${
+                          activeTab === 'web'
+                            ? 'border-cyber-cyan bg-cyber-800/90 shadow-[0_0_22px_rgba(0,242,254,0.35)] ring-2 ring-cyber-cyan/50'
+                            : 'border-white/10 bg-cyber-850/60 hover:border-cyber-cyan/40 hover:bg-cyber-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5">
+                          <span className="flex items-center space-x-1.5 truncate">
+                            <span>🛡️</span>
+                            <span className="truncate">Web Posture (20%)</span>
+                          </span>
+                          <div className="flex items-center space-x-1.5 shrink-0">
+                            {activeTab === 'web' && (
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyber-cyan/20 text-cyber-cyan font-black uppercase">ACTIVE</span>
+                            )}
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${scanData.web_security.security_grade === 'F' ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : scanData.web_security.security_grade === 'A' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-amber-500 shadow-[0_0_8px_#f59e0b]'}`}></span>
+                          </div>
+                        </div>
+                        <div className="font-mono text-xs sm:text-sm font-extrabold text-white truncate">
+                          Security Grade {scanData.web_security.security_grade}
+                        </div>
+                        <div className="mt-2.5 flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); scrollToTab("web"); }}
+                            className={`inline-flex items-center space-x-1.5 text-[11px] font-mono font-bold px-2.5 py-1 rounded-md transition-all cursor-pointer shadow-sm ${
+                              activeTab === 'web'
+                                ? 'bg-cyber-cyan text-cyber-950 shadow-[0_0_12px_rgba(0,242,254,0.6)] font-black'
+                                : 'bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 hover:bg-cyber-cyan hover:text-cyber-950'
+                            }`}
+                          >
+                            <span>Audit OWASP Headers</span>
+                            <span className="font-sans font-black text-xs transition-transform group-hover:translate-x-0.5">➔</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Tile 4: Collaborative Intel */}
+                      <div 
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => scrollToTab("intel")}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToTab("intel"); }}}
+                        className={`p-3 sm:p-4 rounded-xl border transition-all cursor-pointer group relative overflow-hidden select-none ${
+                          activeTab === 'intel'
+                            ? 'border-cyber-cyan bg-cyber-800/90 shadow-[0_0_22px_rgba(0,242,254,0.35)] ring-2 ring-cyber-cyan/50'
+                            : 'border-white/10 bg-cyber-850/60 hover:border-cyber-cyan/40 hover:bg-cyber-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider mb-1.5">
+                          <span className="flex items-center space-x-1.5 truncate">
+                            <span>🌐</span>
+                            <span className="truncate">Collaborative Intel (20%)</span>
+                          </span>
+                          <div className="flex items-center space-x-1.5 shrink-0">
+                            {activeTab === 'intel' && (
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyber-cyan/20 text-cyber-cyan font-black uppercase">ACTIVE</span>
+                            )}
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${scanData.threat_intelligence.community_reports_count > 0 || scanData.threat_intelligence.matched_iocs_count > 0 ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-emerald-500 shadow-[0_0_8px_#10b981]'}`}></span>
+                          </div>
+                        </div>
+                        <div className="font-mono text-xs sm:text-sm font-extrabold text-white truncate">
+                          {scanData.threat_intelligence.community_reports_count > 0 ? `${scanData.threat_intelligence.community_reports_count} Incident Reports` : (scanData.threat_intelligence.matched_iocs_count > 0 ? `${scanData.threat_intelligence.matched_iocs_count} IOC Matches` : '0 Flags')}
+                        </div>
+                        <div className="mt-2.5 flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); scrollToTab("intel"); }}
+                            className={`inline-flex items-center space-x-1.5 text-[11px] font-mono font-bold px-2.5 py-1 rounded-md transition-all cursor-pointer shadow-sm ${
+                              activeTab === 'intel'
+                                ? 'bg-cyber-cyan text-cyber-950 shadow-[0_0_12px_rgba(0,242,254,0.6)] font-black'
+                                : 'bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 hover:bg-cyber-cyan hover:text-cyber-950'
+                            }`}
+                          >
+                            <span>Community Consensus</span>
+                            <span className="font-sans font-black text-xs transition-transform group-hover:translate-x-0.5">➔</span>
+                          </button>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* Executive AI Threat Assessment Banner & Findings Grid */}
+                  <div className="pt-4 sm:pt-6 border-t border-white/10 space-y-3.5">
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-white/[0.02] border border-white/10 flex items-start space-x-3">
+                      <div className="p-1.5 sm:p-2 rounded-lg bg-cyber-cyan/10 border border-cyber-cyan/30 text-cyber-cyan shrink-0">
+                        <ShieldIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-mono text-[10px] sm:text-xs font-bold text-cyber-cyan tracking-wider">EXECUTIVE AI THREAT ASSESSMENT</div>
+                        <p className="text-xs sm:text-sm text-slate-200 mt-1 leading-relaxed break-words">{scanData.verdict.summary}</p>
+                      </div>
+                    </div>
+
+                    {/* Threat Factor Cards Grid (1 column on mobile, 2 on tablet/desktop) */}
+                    {scanData.verdict.threat_factors && scanData.verdict.threat_factors.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-[10px] sm:text-[11px] font-mono font-bold text-slate-400 tracking-wider">DETECTED THREAT INDICATORS & VULNERABILITIES:</div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-2.5">
+                          {scanData.verdict.threat_factors.map((factor, idx) => {
+                            const isCrit = factor.severity === 'CRITICAL';
+                            const isWarn = factor.severity === 'HIGH' || factor.severity === 'MODERATE';
+                            return (
+                              <div
+                                key={idx}
+                                className={`p-2.5 sm:p-3 rounded-lg border flex items-start space-x-2.5 sm:space-x-3 break-words min-w-0 ${
+                                  isCrit ? 'bg-red-500/10 border-red-500/30' :
+                                  isWarn ? 'bg-amber-500/10 border-amber-500/30' :
+                                  'bg-white/[0.03] border-white/10'
+                                }`}
+                              >
+                                <span className={`font-mono text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 rounded shrink-0 ${
+                                  isCrit ? 'bg-red-500/20 text-red-400 border border-red-500/40' :
+                                  isWarn ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                                  'bg-sky-500/20 text-sky-400 border border-sky-500/40'
+                                }`}>
+                                  {factor.severity}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-mono text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">{factor.vector}</div>
+                                  <div className="text-xs text-slate-200 mt-0.5 leading-snug break-words">{factor.message}</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 4 Vector Contribution Progress Bars */}
+                  <div className="pt-4 sm:pt-6 border-t border-white/10 grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <div>
+                      <div className="flex justify-between text-[11px] sm:text-xs font-semibold mb-1">
+                        <span className="text-slate-400">Threat Heuristics</span>
+                        <span className="font-mono font-bold">{scanData.verdict.breakdown.threat_heuristics.score}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700 bg-red-500"
+                          style={{ width: `${Math.max(4, scanData.verdict.breakdown.threat_heuristics.score)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[11px] sm:text-xs font-semibold mb-1">
+                        <span className="text-slate-400">Digital Trust/Certs</span>
+                        <span className="font-mono font-bold">{scanData.verdict.breakdown.digital_trust_certs.score}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700 bg-amber-500"
+                          style={{ width: `${Math.max(4, scanData.verdict.breakdown.digital_trust_certs.score)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[11px] sm:text-xs font-semibold mb-1">
+                        <span className="text-slate-400">Web Headers</span>
+                        <span className="font-mono font-bold">{scanData.verdict.breakdown.web_security_posture.score}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700 bg-sky-500"
+                          style={{ width: `${Math.max(4, scanData.verdict.breakdown.web_security_posture.score)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[11px] sm:text-xs font-semibold mb-1">
+                        <span className="text-slate-400">Collaborative Intel</span>
+                        <span className="font-mono font-bold">{scanData.verdict.breakdown.collaborative_intelligence.score}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700 bg-indigo-500"
+                          style={{ width: `${Math.max(4, scanData.verdict.breakdown.collaborative_intelligence.score)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Dedicated eMudhra Incident Advisory Banner */}
+                {scanData.certificate_analysis.emudhra_incident_analysis && scanData.certificate_analysis.emudhra_incident_analysis.advisory_status !== "NORMAL" && (
+                  <div className="p-4 sm:p-6 rounded-2xl border border-amber-500/50 bg-amber-500/10 shadow-[0_0_30px_rgba(245,158,11,0.2)] space-y-2.5 sm:space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center space-x-1.5 text-amber-400 font-mono text-[11px] sm:text-xs font-extrabold tracking-wider">
+                        <ZapIcon className="w-4 h-4 animate-bounce shrink-0" />
+                        <span>CRITICAL CA TRUST INCIDENT DETECTED</span>
+                      </div>
+                      <span className="font-mono text-[10px] sm:text-xs text-slate-400">Reference: ADV-2026-EMUDHRA-01</span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-white">Certificate Matches Known eMudhra Factorable Key Generation Weakness</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      Cryptographic heuristics identified characteristics matching the documented eMudhra CA key generation vulnerability. 
+                      Specific exposures include factorable 1024-bit RSA key modulus, absent Certificate Transparency SCT timestamps, and intermediate authority trust anomalies.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1 font-mono text-[10px] sm:text-xs">
+                      <span className="px-2.5 py-1 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 font-bold">1024-Bit Factorable Key Size</span>
+                      <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold">Missing Certificate Transparency (SCT)</span>
+                      <span className="px-2.5 py-1 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 font-bold">Private Key Recovery Risk: HIGH</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Deep Live Inspection Tabs */}
+                <div id="inspection-tabs-section" className="space-y-3.5 sm:space-y-4 pt-2 scroll-mt-24">
+                  
+                  {/* Tab Navigation Buttons (Horizontal Swipeable with Hidden Scrollbar) */}
+                  <div className="flex space-x-1 sm:space-x-2 border-b border-white/10 overflow-x-auto pb-1 no-print no-scrollbar w-full">
+                    <button
+                      onClick={() => setActiveTab("threat")}
+                      className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-t-xl font-mono text-xs sm:text-sm font-bold flex items-center space-x-1.5 sm:space-x-2 transition-all whitespace-nowrap border-b-2 cursor-pointer ${
+                        activeTab === 'threat' ? 'text-cyber-cyan border-cyber-cyan bg-cyber-cyan/5' : 'text-slate-400 border-transparent hover:text-white'
+                      }`}
+                    >
+                      <span>🎣</span>
+                      <span>Phishing & Heuristics</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab("certs")}
+                      className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-t-xl font-mono text-xs sm:text-sm font-bold flex items-center space-x-1.5 sm:space-x-2 transition-all whitespace-nowrap border-b-2 cursor-pointer ${
+                        activeTab === 'certs' ? 'text-cyber-cyan border-cyber-cyan bg-cyber-cyan/5' : 'text-slate-400 border-transparent hover:text-white'
+                      }`}
+                    >
+                      <span>🔐</span>
+                      <span>X.509 & eMudhra Certs</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab("web")}
+                      className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-t-xl font-mono text-xs sm:text-sm font-bold flex items-center space-x-1.5 sm:space-x-2 transition-all whitespace-nowrap border-b-2 cursor-pointer ${
+                        activeTab === 'web' ? 'text-cyber-cyan border-cyber-cyan bg-cyber-cyan/5' : 'text-slate-400 border-transparent hover:text-white'
+                      }`}
+                    >
+                      <span>🛡️</span>
+                      <span>Security Headers</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab("intel")}
+                      className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-t-xl font-mono text-xs sm:text-sm font-bold flex items-center space-x-1.5 sm:space-x-2 transition-all whitespace-nowrap border-b-2 cursor-pointer ${
+                        activeTab === 'intel' ? 'text-cyber-cyan border-cyber-cyan bg-cyber-cyan/5' : 'text-slate-400 border-transparent hover:text-white'
+                      }`}
+                    >
+                      <span>🌐</span>
+                      <span>Crowd Threat Intel</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab("remediation")}
+                      className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-t-xl font-mono text-xs sm:text-sm font-bold flex items-center space-x-1.5 sm:space-x-2 transition-all whitespace-nowrap border-b-2 cursor-pointer ${
+                        activeTab === 'remediation' ? 'text-cyber-cyan border-cyber-cyan bg-cyber-cyan/5' : 'text-slate-400 border-transparent hover:text-white'
+                      }`}
+                    >
+                      <span>📋</span>
+                      <span>Remediation Playbook</span>
+                    </button>
+                  </div>
+
+                  {/* Panel 1: Phishing & Threat Heuristics */}
+                  {activeTab === 'threat' && (
+                    <div className="p-4 sm:p-6 rounded-2xl border border-white/10 bg-cyber-900/60 backdrop-blur-xl space-y-5 sm:space-y-6">
+                      
+                      {/* Stat Grid (2 columns on mobile, 3 on tablet, 6 on desktop) */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Target Brand</span>
+                          <span className="block font-mono text-xs sm:text-sm font-extrabold text-white mt-1 truncate">{scanData.threat_analysis.impersonated_brand || 'None'}</span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Spoof Technique</span>
+                          <span className="block font-mono text-xs sm:text-sm font-bold text-white mt-1 truncate">{scanData.threat_analysis.spoofing_technique || 'Standard'}</span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Punycode / IDN</span>
+                          <span className={`block font-mono text-xs sm:text-sm font-bold mt-1 ${scanData.threat_analysis.is_punycode ? 'text-red-400' : 'text-emerald-400'}`}>
+                            {scanData.threat_analysis.is_punycode ? 'Flagged (IDN)' : 'Clean'}
+                          </span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Credential Form</span>
+                          <span className={`block font-mono text-xs sm:text-sm font-bold mt-1 ${scanData.threat_analysis.credential_harvesting_detected ? 'text-red-400' : 'text-emerald-400'}`}>
+                            {scanData.threat_analysis.credential_harvesting_detected ? 'Detected' : 'None'}
+                          </span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Shannon Entropy</span>
+                          <span className="block font-mono text-xs sm:text-sm font-bold text-white mt-1">{scanData.threat_analysis.entropy} bits</span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Subdomain Depth</span>
+                          <span className="block font-mono text-xs sm:text-sm font-bold text-white mt-1">{scanData.threat_analysis.lexical_analysis.subdomain_count} Levels</span>
+                        </div>
+                      </div>
+
+                      {/* Triggered Heuristics List */}
+                      <div className="p-3.5 sm:p-4 rounded-xl border border-white/10 bg-cyber-850/40 space-y-2.5">
+                        <div className="text-[11px] sm:text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Triggered Heuristic Rules:</div>
+                        {scanData.threat_analysis.all_indicators && scanData.threat_analysis.all_indicators.length > 0 ? (
+                          <div className="space-y-2">
+                            {scanData.threat_analysis.all_indicators.map((ind, idx) => (
+                              <div key={idx} className="p-2.5 sm:p-3 rounded-lg border border-white/10 bg-white/[0.02] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 text-xs">
+                                <div className="flex items-center space-x-2.5">
+                                  <span className={`font-mono text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${
+                                    ind.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-400' :
+                                    ind.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
+                                    'bg-amber-500/20 text-amber-400'
+                                  }`}>
+                                    {ind.severity}
+                                  </span>
+                                  <span className="font-mono font-bold text-white">{ind.type}</span>
+                                </div>
+                                <span className="text-slate-300 break-words">{ind.message}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-slate-400">No malicious heuristics or phishing indicators triggered.</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Panel 2: X.509 Cryptography & eMudhra Incident Audit */}
+                  {activeTab === 'certs' && (
+                    <div className="p-4 sm:p-6 rounded-2xl border border-white/10 bg-cyber-900/60 backdrop-blur-xl space-y-5 sm:space-y-6">
+                      
+                      {/* Stat Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Key Algorithm</span>
+                          <span className="block font-mono text-xs sm:text-sm font-bold text-white mt-1 truncate">{scanData.certificate_analysis.cryptography.key_type}</span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Key Length</span>
+                          <span className={`block font-mono text-xs sm:text-sm font-black mt-1 ${scanData.certificate_analysis.cryptography.key_size_bits < 2048 ? 'text-red-400' : 'text-emerald-400'}`}>
+                            {scanData.certificate_analysis.cryptography.key_size_bits} bits
+                          </span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Signature Hash</span>
+                          <span className="block font-mono text-xs sm:text-sm font-bold text-white mt-1 truncate">{scanData.certificate_analysis.cryptography.signature_algorithm}</span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">CT Logs / SCT</span>
+                          <span className={`block font-mono text-xs sm:text-sm font-bold mt-1 ${scanData.certificate_analysis.trust_chain.has_certificate_transparency_sct ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            {scanData.certificate_analysis.trust_chain.has_certificate_transparency_sct ? 'Verified SCT' : 'Missing SCT'}
+                          </span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Issuer Authority</span>
+                          <span className="block font-mono text-xs sm:text-sm font-bold text-white mt-1 truncate">{scanData.certificate_analysis.issuer.organization || scanData.certificate_analysis.issuer.common_name || 'Self-Signed'}</span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Validity Left</span>
+                          <span className="block font-mono text-xs sm:text-sm font-bold text-white mt-1">{scanData.certificate_analysis.validity.days_until_expiration} days</span>
+                        </div>
+                      </div>
+
+                      {/* Responsive Certificate Trust Chain */}
+                      <div className="p-3.5 sm:p-4 rounded-xl border border-white/10 bg-cyber-850/40 space-y-2.5">
+                        <div className="text-[11px] sm:text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">X.509 Trust Hierarchy & Chain of Trust:</div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 py-2 font-mono text-xs">
+                          <div className="p-2.5 sm:p-3 rounded-lg border border-white/10 bg-white/[0.03] flex items-center space-x-2 w-full sm:w-auto">
+                            <span className="text-base sm:text-lg">🏛️</span>
+                            <div className="min-w-0">
+                              <div className="text-[9px] sm:text-[10px] text-slate-400">ROOT CA</div>
+                              <div className="font-bold text-white truncate max-w-[200px] sm:max-w-xs">{scanData.certificate_analysis.trust_chain.is_self_signed ? 'Self-Signed Untrusted Root' : (scanData.certificate_analysis.issuer.organization || 'Public Trust Root')}</div>
+                            </div>
+                          </div>
+                          <span className="text-cyber-cyan font-bold text-center sm:text-left">➔</span>
+                          <div className="p-2.5 sm:p-3 rounded-lg border border-white/10 bg-white/[0.03] flex items-center space-x-2 w-full sm:w-auto">
+                            <span className="text-base sm:text-lg">🏢</span>
+                            <div className="min-w-0">
+                              <div className="text-[9px] sm:text-[10px] text-slate-400">INTERMEDIATE CA</div>
+                              <div className="font-bold text-white truncate max-w-[200px] sm:max-w-xs">{scanData.certificate_analysis.issuer.common_name || scanData.certificate_analysis.issuer.organization || 'Issuing Authority'}</div>
+                            </div>
+                          </div>
+                          <span className="text-cyber-cyan font-bold text-center sm:text-left">➔</span>
+                          <div className="p-2.5 sm:p-3 rounded-lg border border-cyber-cyan/40 bg-cyber-cyan/5 flex items-center space-x-2 w-full sm:w-auto">
+                            <span className="text-base sm:text-lg">🔒</span>
+                            <div className="min-w-0">
+                              <div className="text-[9px] sm:text-[10px] text-cyber-cyan">END-ENTITY LEAF</div>
+                              <div className="font-bold text-white truncate max-w-[200px] sm:max-w-xs">{scanData.domain}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Subject Alternative Names (SANs) */}
+                      <div className="p-3.5 sm:p-4 rounded-xl border border-white/10 bg-cyber-850/40 space-y-2">
+                        <div className="text-[11px] sm:text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Subject Alternative Names (SANs):</div>
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                          {(scanData.certificate_analysis.trust_chain.subject_alternative_names || []).map((san, idx) => (
+                            <span key={idx} className="font-mono text-[10px] sm:text-xs px-2.5 py-1 rounded bg-white/5 border border-white/10 text-slate-300 break-all">
+                              {san}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Panel 3: Security Headers & Web Posture */}
+                  {activeTab === 'web' && (
+                    <div className="p-4 sm:p-6 rounded-2xl border border-white/10 bg-cyber-900/60 backdrop-blur-xl space-y-5 sm:space-y-6">
+                      
+                      {/* Web Grade Header */}
+                      <div className="p-3.5 sm:p-4 rounded-xl border border-white/10 bg-cyber-850/60 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6">
+                        <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-mono text-2xl sm:text-3xl font-black border-2 shrink-0 ${
+                          scanData.web_security.security_grade === 'A' || scanData.web_security.security_grade === 'A+' ? 'text-cyber-emerald border-cyber-emerald bg-emerald-500/10 shadow-[0_0_15px_#10b981]' :
+                          scanData.web_security.security_grade === 'F' ? 'text-cyber-crimson border-cyber-crimson bg-red-500/10 shadow-[0_0_15px_#ef4444]' :
+                          'text-cyber-amber border-cyber-amber bg-amber-500/10'
+                        }`}>
+                          {scanData.web_security.security_grade}
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-[10px] sm:text-xs font-mono font-bold text-slate-400 uppercase">HTTP Security Posture Grade</div>
+                          <div className="flex flex-wrap justify-center sm:justify-start gap-1.5 sm:gap-2 pt-1 font-mono text-[11px] sm:text-xs">
+                            <span className={`px-2.5 py-0.5 rounded border ${scanData.web_security.is_https ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>
+                              HTTPS: {scanData.web_security.is_https ? 'Active' : 'Missing'}
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded border border-white/10 bg-white/5 text-slate-300">
+                              Mixed Content: {scanData.web_security.mixed_content.count}
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded border border-white/10 bg-white/5 text-slate-300">
+                              Server Banner Leaks: {scanData.web_security.information_leaks.length}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 6 Security Headers Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
+                        {Object.entries(scanData.web_security.security_headers).map(([hdr, info], idx) => (
+                          <div key={idx} className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/40 flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <span className="font-mono text-[11px] sm:text-xs font-bold text-white block truncate">{hdr}</span>
+                              <span className="text-[10px] sm:text-[11px] text-slate-400 block mt-0.5 line-clamp-1">
+                                {hdr === 'Strict-Transport-Security' && 'Forces secure TLS transport'}
+                                {hdr === 'Content-Security-Policy' && 'Prevents XSS & code injection'}
+                                {hdr === 'X-Frame-Options' && 'Prevents Clickjacking frames'}
+                                {hdr === 'X-Content-Type-Options' && 'Mitigates MIME type sniffing'}
+                                {hdr === 'Referrer-Policy' && 'Limits referrer leakage'}
+                                {hdr === 'Permissions-Policy' && 'Controls camera/mic permissions'}
+                              </span>
+                            </div>
+                            <span className={`font-mono text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded shrink-0 ${
+                              info.status === 'PASS' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
+                              info.status === 'WARN' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                              'bg-red-500/20 text-red-400 border border-red-500/40'
+                            }`}>
+                              {info.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Panel 4: Collaborative Threat Intel */}
+                  {activeTab === 'intel' && (
+                    <div className="p-4 sm:p-6 rounded-2xl border border-white/10 bg-cyber-900/60 backdrop-blur-xl space-y-5 sm:space-y-6">
+                      
+                      {/* Stat Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Community Reputation</span>
+                          <span className="block font-mono text-base sm:text-lg font-black text-white mt-1">{scanData.threat_intelligence.reputation_score}/100</span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Crowd Incident Reports</span>
+                          <span className="block font-mono text-base sm:text-lg font-black text-white mt-1">{scanData.threat_intelligence.community_reports_count}</span>
+                        </div>
+                        <div className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/60">
+                          <span className="block text-[9px] sm:text-[10px] font-mono font-bold text-slate-400 uppercase">Consensus Net Score</span>
+                          <span className="block font-mono text-base sm:text-lg font-black text-white mt-1">
+                            {scanData.threat_intelligence.community_consensus.net_score >= 0 ? `+${scanData.threat_intelligence.community_consensus.net_score}` : scanData.threat_intelligence.community_consensus.net_score}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Crowdsourced Reports Stream */}
+                      <div className="p-3.5 sm:p-4 rounded-xl border border-white/10 bg-cyber-850/40 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] sm:text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Crowdsourced Community Telemetry:</span>
+                          <button
+                            onClick={() => setReportModalOpen(true)}
+                            className="font-mono text-xs px-2.5 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 text-white cursor-pointer"
+                          >
+                            + Submit Report
+                          </button>
+                        </div>
+                        {scanData.threat_intelligence.reports && scanData.threat_intelligence.reports.length > 0 ? (
+                          <div className="space-y-2">
+                            {scanData.threat_intelligence.reports.map((rep) => (
+                              <div key={rep.id} className="p-2.5 sm:p-3 rounded-lg border border-white/10 bg-white/[0.02] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div>
+                                  <div className="font-mono text-xs font-bold text-cyber-cyan uppercase">{rep.category} <span className="text-slate-400 font-normal">@{rep.reporter_name}</span></div>
+                                  <div className="text-xs text-slate-200 mt-1 break-words">{rep.description}</div>
+                                </div>
+                                <div className="flex items-center space-x-1.5 bg-white/5 border border-white/10 px-2 py-1 rounded-lg font-mono text-xs self-start sm:self-auto">
+                                  <button onClick={() => handleVote(rep.id, 'up')} className="hover:text-cyber-cyan cursor-pointer px-1">▲</button>
+                                  <span className="font-bold text-white min-w-[20px] text-center">{rep.upvotes - rep.downvotes}</span>
+                                  <button onClick={() => handleVote(rep.id, 'down')} className="hover:text-red-400 cursor-pointer px-1">▼</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-slate-400">No community incidents recorded for this domain.</div>
+                        )}
+                      </div>
+
+                      {/* Matched Global Threat IOCs */}
+                      <div className="p-3.5 sm:p-4 rounded-xl border border-white/10 bg-cyber-850/40 space-y-2">
+                        <div className="text-[11px] sm:text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Matched Threat Feed IOCs:</div>
+                        {scanData.threat_intelligence.iocs && scanData.threat_intelligence.iocs.length > 0 ? (
+                          <div className="space-y-1.5 font-mono text-xs">
+                            {scanData.threat_intelligence.iocs.map((ioc, idx) => (
+                              <div key={idx} className="p-2 rounded bg-white/[0.02] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <span className="text-cyber-cyan font-bold break-all">{ioc.indicator}</span>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-red-400 font-bold uppercase">{ioc.threat_type}</span>
+                                  <span className="text-slate-400">{ioc.confidence}% Conf</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-slate-400">No global threat feed IOC matches found.</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Panel 5: Actionable Remediation (User vs Admin) */}
+                  {activeTab === 'remediation' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                      
+                      {/* Left Column: User Safety Guidance */}
+                      <div className="p-4 sm:p-6 rounded-2xl border border-sky-400/30 bg-sky-500/[0.04] backdrop-blur-xl space-y-3.5 sm:space-y-4">
+                        <div className="flex items-center space-x-3 pb-3 border-b border-white/10">
+                          <span className="text-xl sm:text-2xl">🛡️</span>
+                          <div>
+                            <h4 className="font-bold text-white text-sm sm:text-base">End-User Safety Guidance</h4>
+                            <span className="text-[11px] sm:text-xs text-slate-400">Immediate protective actions for website visitors</span>
+                          </div>
+                        </div>
+                        <ul className="space-y-2 sm:space-y-2.5 text-xs text-slate-200">
+                          {scanData.recommendations.user_guidance.map((guide, idx) => (
+                            <li key={idx} className="flex items-start space-x-2">
+                              <span className="text-cyber-cyan font-bold font-mono shrink-0">✓</span>
+                              <span className="leading-relaxed break-words">{guide}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Right Column: Admin Remediation */}
+                      <div className="p-4 sm:p-6 rounded-2xl border border-cyber-cyan/30 bg-cyber-cyan/[0.04] backdrop-blur-xl space-y-3.5 sm:space-y-4">
+                        <div className="flex items-center space-x-3 pb-3 border-b border-white/10">
+                          <span className="text-xl sm:text-2xl">⚙️</span>
+                          <div>
+                            <h4 className="font-bold text-white text-sm sm:text-base">Administrator Hardening Checklist</h4>
+                            <span className="text-[11px] sm:text-xs text-slate-400">DevSecOps & Web Infrastructure Remediation</span>
+                          </div>
+                        </div>
+                        <ul className="space-y-2 sm:space-y-2.5 text-xs text-slate-200">
+                          {scanData.recommendations.admin_remediation.map((rec, idx) => (
+                            <li key={idx} className="flex items-start space-x-2">
+                              <span className="text-cyber-emerald font-bold font-mono shrink-0">✓</span>
+                              <span className="leading-relaxed break-words">{rec}</span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {/* Copyable Nginx Security Config Snippet */}
+                        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/10">
+                          <div className="text-[10px] sm:text-[11px] font-mono font-bold text-cyber-cyan uppercase mb-2">Recommended Nginx Security Headers Config:</div>
+                          <pre className="p-2.5 sm:p-3 rounded-lg bg-cyber-950 border border-white/10 font-mono text-[10px] sm:text-[11px] text-slate-300 overflow-x-auto leading-relaxed max-w-full">
+{`add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self'; frame-ancestors 'none';" always;
+add_header X-Frame-Options "DENY" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;`}
+                          </pre>
+                        </div>
+                      </div>
+
+                    </div>
+                  )}
+
+                </div>
+
+                {/* Print Sign-off (PDF Export Deliverable) */}
+                <div className="hidden print-only pt-8 border-t-2 border-slate-400 space-y-4">
+                  <div className="flex justify-between items-end text-xs">
+                    <div>
+                      <div className="font-bold">Auditing Engine: ThreatGuard AI Core v2.0 (OASIS STIX 2.1 Standardized)</div>
+                      <div className="text-slate-600">Compliance Baseline: CA/Browser Forum Baseline Requirements & OWASP Top 10</div>
+                      <div className="text-slate-600">Scan ID: {scanData.scan_id}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="border-2 border-black px-4 py-2 font-black tracking-widest uppercase">OFFICIAL SECURITY AUDIT</div>
+                      <div className="text-slate-600 mt-1">{new Date().toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* Live Global Threat Intelligence Feed Stream (Dynamically positioned lower for balanced landing presentation) */}
+            <section className={`${!scanData ? 'mt-12 sm:mt-24 md:mt-32 lg:mt-36' : 'mt-8 sm:mt-10'} p-4 sm:p-6 rounded-2xl border border-white/10 bg-cyber-900/60 backdrop-blur-xl space-y-3 sm:space-y-4 no-print shadow-glass transition-all`}>
+              <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-white/5">
+                <div className="flex items-center space-x-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyber-cyan animate-pulse shadow-[0_0_8px_#00f2fe] shrink-0"></span>
+                  <span className="text-xs sm:text-sm font-extrabold text-white tracking-wider">LIVE GLOBAL THREAT INTELLIGENCE STREAM</span>
+                  <span className="hidden sm:inline-block text-[10px] font-mono text-slate-500 font-bold uppercase">Real-Time Ingestion</span>
+                </div>
+                <button
+                  onClick={handleOpenStix}
+                  className="font-mono text-xs text-cyber-blue hover:text-white flex items-center space-x-1.5 px-2.5 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+                >
+                  <span>Export STIX 2.1 Bundle</span>
+                  <span className="font-sans font-black">➔</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
+                {threatFeed.map((item, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => runAudit(item.indicator)}
+                    className="p-3 sm:p-3.5 rounded-xl border border-white/10 bg-cyber-850/40 hover:border-cyber-cyan/40 hover:bg-cyber-800 transition-all cursor-pointer group flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 text-xs font-mono font-bold mb-1.5">
+                        <span 
+                          className="text-white group-hover:text-cyber-cyan transition-colors leading-snug min-w-0 flex-1 [word-break:break-all] [overflow-wrap:anywhere]"
+                          style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}
+                        >
+                          {item.indicator}
+                        </span>
+                        <span className={`text-[9px] sm:text-[10px] px-2 py-0.5 rounded uppercase font-black tracking-wider shrink-0 shadow-sm ${
+                          item.severity === 'critical' ? 'bg-red-500/20 text-red-300 border border-red-500/40' :
+                          item.severity === 'high' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40' :
+                          'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                        }`}>
+                          {item.severity}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-300 line-clamp-2 leading-relaxed break-words mt-1">{item.description}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+          </main>
+
+          {/* Dual Database Architecture Modal */}
+          {dbModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-cyber-950/85 backdrop-blur-md">
+              <div className="w-full max-w-2xl rounded-2xl border border-cyber-cyan/40 bg-cyber-900 p-4 sm:p-6 shadow-glow-cyan space-y-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-cyber-cyan/15 border border-cyber-cyan/40 flex items-center justify-center text-cyber-cyan">
+                      <DatabaseIcon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        Dual Persistence & Hybrid Storage Architecture
+                      </h3>
+                      <p className="text-[11px] font-mono text-slate-400">Zero-Downtime Resilience for SOC & Air-Gapped Demo Environments</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setDbModalOpen(false)} className="text-slate-400 hover:text-white text-2xl leading-none cursor-pointer p-1">✕</button>
+                </div>
+
+                {/* Status Notice if refreshed */}
+                {dbPingNotice && (
+                  <div className="px-3 py-2 rounded-lg bg-cyber-950 border border-cyber-cyan/30 text-xs font-mono text-cyber-cyan flex items-center justify-between">
+                    <span>{dbPingNotice}</span>
+                    <span className="text-[10px] text-slate-400">Refreshed</span>
+                  </div>
+                )}
+
+                {/* Dual Engine Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {/* Supabase PostgreSQL Card */}
+                  <div className={`p-4 rounded-xl border transition-all ${
+                    dbStatus.is_cloud_active
+                      ? 'bg-emerald-500/10 border-emerald-400/50 shadow-[0_0_20px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400/40'
+                      : 'bg-cyber-950/60 border-white/10 opacity-75'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xl">☁️</span>
+                        <div>
+                          <div className="text-sm font-bold text-white">Supabase Cloud</div>
+                          <div className="text-[10px] font-mono text-slate-400">PostgreSQL 15+ Managed</div>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-extrabold uppercase ${
+                        dbStatus.is_cloud_active
+                          ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-400/50'
+                          : 'bg-slate-800 text-slate-400 border border-white/10'
+                      }`}>
+                        {dbStatus.is_cloud_active ? '● ACTIVE ENGINE' : 'STANDBY'}
+                      </span>
+                    </div>
+                    <ul className="text-xs text-slate-300 space-y-1.5 font-mono">
+                      <li className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">Security:</span>
+                        <span className="text-emerald-400 font-bold">Row-Level Security (RLS)</span>
+                      </li>
+                      <li className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">Role:</span>
+                        <span>Primary Global Cloud Store</span>
+                      </li>
+                      <li className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">Tables:</span>
+                        <span>threat_reports, scan_history</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* SQLite Local Engine Card */}
+                  <div className={`p-4 rounded-xl border transition-all ${
+                    !dbStatus.is_cloud_active
+                      ? 'bg-cyber-cyan/10 border-cyber-cyan/50 shadow-[0_0_20px_rgba(0,242,254,0.3)] ring-1 ring-cyber-cyan/40'
+                      : 'bg-cyber-950/60 border-white/10 opacity-75'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xl">🗄️</span>
+                        <div>
+                          <div className="text-sm font-bold text-white">SQLite Engine</div>
+                          <div className="text-[10px] font-mono text-slate-400">threat_intel.db (Local)</div>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-extrabold uppercase ${
+                        !dbStatus.is_cloud_active
+                          ? 'bg-cyber-cyan/30 text-cyan-200 border border-cyber-cyan/50'
+                          : 'bg-slate-800 text-slate-400 border border-white/10'
+                      }`}>
+                        {!dbStatus.is_cloud_active ? '● ACTIVE ENGINE' : 'ONLINE MIRROR'}
+                      </span>
+                    </div>
+                    <ul className="text-xs text-slate-300 space-y-1.5 font-mono">
+                      <li className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">Air-Gapped:</span>
+                        <span className="text-cyan-400 font-bold">100% Offline Capable</span>
+                      </li>
+                      <li className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">Role:</span>
+                        <span>Instant Local Failover</span>
+                      </li>
+                      <li className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">Mode:</span>
+                        <span>WAL Journaling & Memory Sync</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Live Real-Time Diagnostic Bar */}
+                <div className="p-3 rounded-xl bg-cyber-950/90 border border-white/10 font-mono text-[11px] space-y-1.5">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>SUPABASE CLOUD TARGET:</span>
+                    <span className="text-white truncate max-w-[280px]">qfzbymdipcgushmteuvx.supabase.co:443</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>LIVE NETWORK PROBE:</span>
+                    <span className={dbStatus.is_cloud_active ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                      {dbStatus.status_reason || (dbStatus.is_cloud_active ? 'Reachable' : 'Air-Gapped / Isolated')}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>ACTIVE PERSISTENCE ROUTE:</span>
+                    <span className={dbStatus.is_cloud_active ? 'text-emerald-400 font-black' : 'text-cyan-400 font-black'}>
+                      {dbStatus.is_cloud_active ? '☁️ PRIMARY CLOUD POSTGRESQL' : '🗄️ LOCAL EMBEDDED SQLITE (FAILOVER)'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* How Dual Persistence Works */}
+                <div className="p-3.5 rounded-xl bg-cyber-950/70 border border-white/10 space-y-2 text-xs">
+                  <div className="font-bold text-white flex items-center gap-1.5 font-mono text-xs">
+                    <span className="text-cyber-cyan">⚡</span>
+                    HOW THE FAILOVER & DUAL SYNC ROUTER WORKS
+                  </div>
+                  <p className="text-slate-300 leading-relaxed font-sans text-xs">
+                    When running on cloud infrastructure with network access, <strong>ThreatGuard</strong> writes incoming threat telemetry and user community reports directly to <strong>Supabase PostgreSQL</strong> with strict <strong>Row-Level Security (RLS)</strong>.
+                  </p>
+                  <p className="text-slate-300 leading-relaxed font-sans text-xs">
+                    In sandboxed, firewalled, or air-gapped demo settings (like hackathon evaluations without Wi-Fi), the backend automatically and transparently switches to the embedded <strong>SQLite engine (<code className="text-cyber-cyan">threat_intel.db</code>)</strong> with zero configuration or downtime.
+                  </p>
+                </div>
+
+                {/* Modal Footer Controls */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => checkDbStatus(true)}
+                      disabled={dbPingLoading}
+                      className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-cyber-cyan/15 border border-cyber-cyan/40 text-cyber-cyan font-mono text-xs font-bold hover:bg-cyber-cyan hover:text-cyber-950 transition-all disabled:opacity-50 cursor-pointer"
+                    >
+                      <span>{dbPingLoading ? "Probing..." : "🔄 Re-probe Network"}</span>
+                    </button>
+
+                    <button
+                      onClick={toggleAirGapMode}
+                      disabled={dbPingLoading}
+                      className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all disabled:opacity-50 cursor-pointer ${
+                        dbStatus.is_cloud_active
+                          ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 hover:bg-amber-500/30'
+                          : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30'
+                      }`}
+                    >
+                      <span>{dbStatus.is_cloud_active ? "📴 Simulate Air-Gapped Mode" : "☁️ Reconnect Supabase Cloud"}</span>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setDbModalOpen(false)}
+                    className="px-4 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-mono text-xs font-semibold cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STIX 2.1 Modal (Responsive) */}
+          {stixModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-cyber-950/85 backdrop-blur-md">
+              <div className="w-full max-w-3xl rounded-2xl border border-cyber-cyan/40 bg-cyber-900 p-4 sm:p-6 shadow-glow-cyan space-y-3 sm:space-y-4 max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-cyber-cyan uppercase">OASIS OPEN STANDARD</span>
+                    <h3 className="text-base sm:text-lg font-bold text-white">STIX 2.1 Threat Intel Bundle</h3>
+                  </div>
+                  <button onClick={() => setStixModalOpen(false)} className="text-slate-400 hover:text-white text-2xl leading-none cursor-pointer p-1">✕</button>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
+                  <span>Standardized machine-readable bundle for SIEM / SOAR automation.</span>
+                  <button
+                    onClick={handleCopyStix}
+                    className="font-mono px-3 py-1 rounded bg-white/10 hover:bg-white/20 text-white cursor-pointer"
+                  >
+                    {copiedStix ? "✓ Copied!" : "📋 Copy JSON"}
+                  </button>
+                </div>
+                <pre className="flex-1 p-3 sm:p-4 rounded-xl bg-cyber-950 border border-white/10 font-mono text-[11px] sm:text-xs text-cyber-blue overflow-auto leading-relaxed max-w-full">
+                  {stixContent}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {/* Report Threat Modal (Responsive) */}
+          {reportModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-cyber-950/85 backdrop-blur-md">
+              <div className="w-full max-w-md rounded-2xl border border-cyber-cyan/40 bg-cyber-900 p-4 sm:p-6 shadow-glow-cyan space-y-3 sm:space-y-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <h3 className="text-base sm:text-lg font-bold text-white">Flag Malicious URL to Crowd Intel</h3>
+                  <button onClick={() => setReportModalOpen(false)} className="text-slate-400 hover:text-white text-2xl leading-none cursor-pointer p-1">✕</button>
+                </div>
+                <form onSubmit={handleReportSubmit} className="space-y-3 sm:space-y-4 text-xs font-mono">
+                  <div>
+                    <label className="block text-slate-400 uppercase font-bold mb-1">Target URL or Host:</label>
+                    <input
+                      name="url"
+                      defaultValue={scanData ? scanData.target_url : ""}
+                      required
+                      className="w-full p-2.5 rounded-lg bg-cyber-950 border border-white/10 text-white focus:outline-none focus:border-cyber-cyan text-xs"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                    <div>
+                      <label className="block text-slate-400 uppercase font-bold mb-1">Category:</label>
+                      <select name="category" className="w-full p-2.5 rounded-lg bg-cyber-950 border border-white/10 text-white focus:outline-none focus:border-cyber-cyan text-xs">
+                        <option value="phishing">Phishing</option>
+                        <option value="fake_recruitment">Job Scam</option>
+                        <option value="rogue_cert">Weak Key / Cert</option>
+                        <option value="scam">Financial Fraud</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 uppercase font-bold mb-1">Brand Spoofed:</label>
+                      <input
+                        name="brand"
+                        defaultValue={scanData && scanData.threat_analysis.impersonated_brand ? scanData.threat_analysis.impersonated_brand : ""}
+                        placeholder="e.g. PayPal, Chase"
+                        className="w-full p-2.5 rounded-lg bg-cyber-950 border border-white/10 text-white focus:outline-none focus:border-cyber-cyan text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 uppercase font-bold mb-1">Incident Findings / Notes:</label>
+                    <textarea
+                      name="desc"
+                      required
+                      placeholder="Deceptive credential form, missing CT logs, etc."
+                      className="w-full p-2.5 rounded-lg bg-cyber-950 border border-white/10 text-white focus:outline-none focus:border-cyber-cyan h-20 text-xs"
+                    ></textarea>
+                  </div>
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setReportModalOpen(false)}
+                      className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:text-white cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-lg bg-cyber-cyan text-cyber-950 font-bold hover:bg-sky-400 cursor-pointer"
+                    >
+                      Submit Report
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Responsive Footer */}
+          <footer className="border-t border-white/10 bg-cyber-950/90 py-5 sm:py-6 mt-8 sm:mt-12 no-print w-full">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3 text-center sm:text-left">
+              <div>
+                <span className="font-bold text-white">ThreatGuard AI</span> • Built for HackMatrix'26 Web Security Track
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 font-mono text-[10px] sm:text-[11px] text-cyber-cyan">
+                <span>threat.py</span>
+                <span>•</span>
+                <span>webscan.py</span>
+                <span>•</span>
+                <span>certs.py</span>
+                <span>•</span>
+                <span>intel.py</span>
+                <span>•</span>
+                <span>risk.py</span>
+              </div>
+            </div>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // Mount React App
+    const rootElement = document.getElementById("root");
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<DashboardApp />);
+  </script>
+</body>
+</html>
