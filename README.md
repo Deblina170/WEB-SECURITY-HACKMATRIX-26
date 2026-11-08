@@ -1,173 +1,159 @@
-# ThreatGuard // AI-Powered Web Threat Detection & Digital Trust Intelligence
+# ThreatGuard.AI
 
-An intelligent cyber threat detection and digital trust platform that unifies **phishing threat heuristics**, **web security assessment**, **cryptographic certificate validation**, and **collaborative threat intelligence**.
-
-Built for **HackMatrix'26 Web Security Track**.
+> **An AI-powered multi-vector cyber threat detection and digital trust intelligence platform evaluating phishing heuristics, X.509 cryptography, server posture, and collaborative threat intelligence with hybrid cloud and air-gapped resilience.**
 
 ---
 
-## 🏛️ Architecture & Module Structure
+## 1. Project Name & Description
+**ThreatGuard.AI** is an advanced Web Threat Intelligence and Digital Trust platform built for **HackMatrix'26**. It evaluates URLs and digital assets across four critical attack vectors: **brand spoofing & phishing heuristics**, **X.509 cryptographic PKI validation (including the historic eMudhra CA incident)**, **OWASP web security posture**, and **collaborative threat intelligence**. It generates an explainable **Digital Trust Score (0–100)** and exports enterprise-ready **STIX 2.1** threat bundles.
 
-The platform is modularized into distinct, dedicated single-responsibility files as required by the specification:
+---
 
+## 2. Problem
+1. **The Green Padlock Illusion**: Attackers easily obtain free TLS certificates (e.g., Let's Encrypt), misleading non-technical users into believing a malicious phishing site is "safe" simply because an HTTPS lock icon appears.
+2. **Zero-Day Phishing & Homograph Impersonation**: Traditional static blocklists and domain blacklists fail against newly registered domains, Punycode/IDN character substitutions (e.g., Cyrillic `а` for Latin `a`), and algorithmically generated domains (DGA).
+3. **Cryptographic Weaknesses & CA Incidents**: Compromised or improperly configured Certificate Authorities (such as the historic **eMudhra TLS incident**) can issue weak 1024-bit RSA certificates or untrusted intermediate certificates, enabling Man-In-The-Middle (MITM) inspection without triggering standard browser errors.
+4. **Air-Gapped & Restricted Environments**: Modern SOCs and defense setups often operate in restricted or air-gapped networks where cloud-only threat intelligence tools fail completely.
+
+---
+
+## 3. Solution
+ThreatGuard.AI provides a unified, explainable defense layer:
+- **Weighted Multi-Vector Risk Engine**: Combines Phishing Heuristics (35%), X.509 Cryptography (25%), Web Posture (20%), and Collaborative Intel (20%) to compute an explainable **Digital Trust Score (0 to 100)** and categorical risk level (`CRITICAL`, `HIGH`, `MODERATE`, `LOW`, `CLEAN`).
+- **eMudhra CA Incident Intelligence**: Deep cryptographic analysis inspecting RSA key lengths (< 2048-bit flagged as critical), Certificate Transparency (CT) Signed Certificate Timestamps (SCTs), SHA-1 deprecation, and rogue intermediate CAs.
+- **Lexical & Shannon Entropy Heuristics**: Calculates domain randomness, Levenshtein distance against 40+ high-value target brands (PayPal, Chase, Amazon, Microsoft, eMudhra), and scans for unencrypted credential-harvesting forms.
+- **Dual Persistence Architecture (Cloud & Air-Gapped Resiliency)**: Dynamically synchronizes threat intelligence to **Supabase PostgreSQL** when online, while using sub-second TCP socket probes to failover instantly to **local SQLite** in air-gapped or offline environments.
+- **Enterprise SIEM Integration**: One-click generation and download of machine-readable **OASIS STIX 2.1** threat bundles for Splunk, Microsoft Sentinel, and MISP ingestion.
+
+---
+
+## 4. Demo Links & Screenshot
+
+- **Local Web Command Center**: [http://localhost:8001](http://localhost:8001)
+- **Interactive OpenAPI / Swagger UI**: [http://localhost:8001/docs](http://localhost:8001/docs)
+- **GitHub Repository**: [https://github.com/Deblina170/WEB-SECURITY-HACKMATRIX-26](https://github.com/Deblina170/WEB-SECURITY-HACKMATRIX-26)
+
+### Dashboard Screenshot
+![ThreatGuard.AI Cyber Threat Command Center](assets/dashboard_screenshot.png)
+
+---
+
+## 5. Tech Stack
+
+| Layer | Technologies |
+| :--- | :--- |
+| **Backend & API** | Python 3.10+, FastAPI, Uvicorn (ASGI), Pydantic v2 |
+| **Cryptographic & Network Analysis** | `cryptography` (pyca/cryptography X.509 parser), `urllib3`, `requests`, Python `socket`, `ssl` |
+| **Algorithms** | Shannon Entropy, Levenshtein Distance, Punycode IDN decoder, OWASP Header Grader |
+| **Persistence (Dual Architecture)** | **Cloud:** Supabase (Managed PostgreSQL) <br> **Air-Gapped / Offline:** SQLite3 with automatic reachability failover |
+| **Frontend UI** | React 18, Tailwind CSS, Lucide Icons, Cyberpunk Glassmorphism SOC design |
+| **Standards & Specifications** | OASIS STIX 2.1 JSON, CA/B Forum 398-day validity, RFC 5280 (X.509 PKI) |
+
+---
+
+## 6. Architecture
+
+### System Flow Diagram
+```mermaid
+flowchart TD
+    User["Analyst / Target URL"] --> UI["Cyber Defense Command Center (React 18 + Tailwind)"]
+    UI --> API["FastAPI Gateway (main.py)"]
+    
+    subgraph MultiVectorEngine ["Multi-Vector Security Engine"]
+        API --> V1["1. threat.py<br>(AI Phishing, Entropy, 40+ Brands, Forms)"]
+        API --> V2["2. certs.py<br>(X.509 PKI, Key Strength, eMudhra CA Audit)"]
+        API --> V3["3. webscan.py<br>(OWASP Headers, HSTS, CSP, Cookies, Leaks)"]
+        API --> V4["4. intel.py<br>(Community IOC Consensus, STIX 2.1)"]
+    end
+    
+    V1 & V2 & V3 & V4 --> RiskEngine["risk.py (Weighted Aggregation & Trust Score)"]
+    RiskEngine --> Verdict["Explainable Verdict (Score 0-100, Threat Vectors, Remediation)"]
+    
+    subgraph PersistenceDock ["Dual Persistence Layer (database.py)"]
+        Verdict --> TCPCheck{"Supabase Online?<br>(TCP Port 443 Probe)"}
+        TCPCheck -- "Online" --> Supa["Supabase Cloud (PostgreSQL)"]
+        TCPCheck -- "Offline / Air-Gapped" --> SQLite["Local SQLite Failover (threat_intel.db)"]
+    end
 ```
-WEB SECURITY HACKMATRIX'26/
-├── threat.py             # AI Phishing heuristics, brand spoofing, typosquatting, credential forms
-├── webscan.py            # Web posture, security headers (HSTS, CSP, etc.), cookie flags, leaks
-├── certs.py              # X.509 cryptography, CA validation, eMudhra incident audit, CT logs
-├── intel.py              # Collaborative threat intelligence, community reports, voting & feeds
-├── risk.py               # Multi-vector risk aggregation, trust score, and explainable AI verdict
-├── main.py               # FastAPI backend with core /analyze?url=... endpoint
-├── database.py           # SQLite database layer for IOC feeds, community reports, and history
-├── network_utils.py      # Non-blocking DNS & network helper
-├── test_api.py           # Comprehensive automated test suite
+
+### Module Structure
+```
+WEB-SECURITY-HACKMATRIX-26/
+├── certs.py              # X.509 cryptography, CA validation, eMudhra audit, CT SCT logs
+├── threat.py             # Phishing heuristics, brand spoofing, entropy, credential forms
+├── webscan.py            # Web posture, OWASP security headers, cookie flags, tech leaks
+├── risk.py               # Weighted multi-vector risk engine & explainable trust scoring
+├── intel.py              # Collaborative threat feed & OASIS STIX 2.1 exporter
+├── database.py           # Dual persistence (Supabase PostgreSQL + SQLite failover)
+├── main.py               # FastAPI backend with /analyze, /api/threats, and static routes
+├── network_utils.py      # Non-blocking async network & DNS socket helper
+├── supabase_schema.sql   # Cloud PostgreSQL DDL schema & indexes
+├── test_api.py           # Comprehensive automated verification suite (100% pass)
 ├── requirements.txt      # Project dependencies
+├── .env.example          # Environment variables template
+├── assets/               # Screenshots and UI visual assets
+│   └── dashboard_screenshot.png
 └── static/               # Cyber Defense Command Center Frontend
-    ├── index.html        # Interactive dashboard
-    ├── style.css         # Dark cyberpunk styling & SVG trust gauge
-    └── app.js            # Frontend reactive logic & API integration
+    ├── index.html        # Single-page dashboard application
+    ├── style.css         # Dark cyberpunk styling & animations
+    └── app.js            # Frontend reactive state & API integration
 ```
 
 ---
 
-## 🚀 Key Security Capabilities
+## 7. Setup and Run Steps
 
-### 1. Phishing & Threat Analysis (`threat.py`)
-- **Brand Impersonation & Typosquatting**:
-  - Fuzzy distance matching against 40+ high-profile brands (PayPal, Chase, Amazon, Microsoft, Google, eMudhra, etc.).
-  - Levenshtein distance detection for character substitutions (`1` for `l`, `0` for `o`, `rn` for `m`).
-  - IDN Homograph / Punycode (`xn--`) character spoofing detection.
-- **Domain Lexical Heuristics**:
-  - Shannon entropy calculation to detect Algorithmically Generated Domains (DGA).
-  - Excessive subdomain depth, suspicious TLDs (`.tk`, `.xyz`, `.top`, `.buzz`), and IP-as-host detection.
-- **Credential Harvesting Inspection**:
-  - HTML parser auditing password fields, banking inputs, and sensitive data prompts.
-  - Insecure unencrypted HTTP form submissions and cross-domain credential exfiltration.
+### Prerequisites
+- Python 3.10 or higher
+- Git
 
-### 2. Web Security Assessment (`webscan.py`)
-- **Security Headers Evaluation & Letter Grade (A+ to F)**:
-  - `Strict-Transport-Security` (HSTS) with max-age, subdomains, and preload checks.
-  - `Content-Security-Policy` (CSP) with `unsafe-inline` and `unsafe-eval` warnings.
-  - `X-Frame-Options` (Clickjacking mitigation).
-  - `X-Content-Type-Options` (nosniff MIME protection).
-  - `Referrer-Policy` & `Permissions-Policy`.
-- **Information Disclosure**:
-  - Detects server technology leaks (`Server`, `X-Powered-By`, `X-AspNet-Version`).
-- **Cookie & Mixed Content**:
-  - Cookie security audit (`Secure`, `HttpOnly`, `SameSite`).
-  - Mixed content scanner detecting insecure HTTP subresources on HTTPS pages.
-
-### 3. Digital Trust & Certificate Validation (`certs.py`)
-- **Deep Cryptographic X.509 Inspection**:
-  - Public Key Strength: Flags weak RSA keys (< 2048 bits) as critical vulnerabilities.
-  - Signature Hash Algorithms: Flags deprecated collision-prone hashes (MD5, SHA-1).
-  - Subject Alternative Names (SANs) & Domain matching.
-  - CA/B Forum 398-day maximum validity compliance.
-- **⚡ The eMudhra TLS Certificate Incident Intelligence**:
-  - **Context**: The eMudhra incident highlighted severe risks where Certificate Authority key generation flaws could yield predictable or duplicate cryptographic keys, enabling unauthorized MITM decryption and website impersonation.
-  - **Mitigation & Detection**:
-    - Flags eMudhra-issued certificates exhibiting weak RSA key sizes (<= 1024-bit).
-    - Checks for embedded **Signed Certificate Timestamps (SCTs)** per Certificate Transparency (CT) standards (`1.3.6.1.4.1.11129.2.4.2`).
-    - Detects fraudulent intermediate certificates and domain impersonators masquerading as eMudhra Trust Services.
-
-### 4. Collaborative Threat Intelligence (`intel.py`)
-- **Crowdsourced Intelligence & Reputation**:
-  - Users and security analysts can submit live threat reports with category, brand, and evidence notes.
-  - Crowd upvoting/downvoting mechanism with IP-duplicate protection to establish consensus.
-- **IOC Threat Feeds**:
-  - SQLite-backed Indicators of Compromise (IOC) registry pre-populated with threat signatures.
-  - Calculates a real-time community reputation score.
-- **☁️ Hybrid Database Architecture (Supabase PostgreSQL + SQLite Failover)**:
-  - Supports dynamic cloud connection to **Supabase (PostgreSQL)** for multi-device live threat sharing.
-  - Features **automatic air-gapped failover to local SQLite** so the system operates with 100% reliability offline with zero network latency.
-  - Inspect active persistence engine via `GET /api/system/db-status`.
-
-### 5. Unified Explainable Risk Engine (`risk.py`)
-- **Weighted Multi-Vector Scoring**:
-  - Threat Heuristics: **35%**
-  - Digital Trust & Certs: **25%**
-  - Web Security Posture: **20%**
-  - Collaborative Intel: **20%**
-- **Outputs**:
-  - **Digital Trust Score (0 to 100)**: Higher is safer.
-  - **Risk Level**: `CRITICAL`, `HIGH`, `MODERATE`, `LOW`, `CLEAN`.
-  - **Explainable Rationale**: Natural language verdict explaining why the target is unsafe.
-  - **Actionable Remediation**: End-user safety guidance + Administrator hardening steps.
-
----
-
-## 📡 Core API Specification
-
-### 1. Core Analyze Endpoint (Primary Requirement)
-```http
-GET /analyze?url=https://chase.com
-```
-Also supports `POST /analyze` with JSON:
-```json
-{
-  "url": "https://chase.com"
-}
-```
-
-#### Example Response:
-```json
-{
-  "status": "success",
-  "scan_id": "9d8e7c6b-...",
-  "target_url": "https://chase.com",
-  "domain": "chase.com",
-  "verdict": {
-    "risk_level": "CLEAN",
-    "risk_score": 1,
-    "trust_score": 99,
-    "badge_color": "green",
-    "summary": "VERIFIED: 'chase.com' exhibits healthy security hygiene...",
-    "breakdown": {
-      "threat_heuristics": { "score": 0, "status": "CLEAN" },
-      "digital_trust_certs": { "trust_score": 100, "status": "VALID" },
-      "web_security_posture": { "grade": "A", "headers_score": 90 },
-      "collaborative_intelligence": { "verdict": "CLEAN" }
-    }
-  },
-  "threat_analysis": { ... },
-  "certificate_analysis": { ... },
-  "web_security": { ... },
-  "threat_intelligence": { ... },
-  "recommendations": { ... }
-}
-```
-
-### 2. Other Endpoints
-- `GET /api/threats/stix` — **OASIS STIX 2.1 Enterprise Threat Intelligence Bundle** for SIEM/SOAR ingestion (Splunk, Sentinel, MISP).
-- `POST /api/intel/report` — Submit a collaborative threat report.
-- `POST /api/intel/vote` — Vote on an existing report.
-- `GET /api/threats/feed` — Retrieve live global IOC threat feed.
-- `GET /api/samples` — Retrieve curated demonstration test cases.
-- `GET /api/history` — Scan audit logs.
-- `GET /health` — Health check.
-- `GET /docs` — Interactive OpenAPI / Swagger UI.
-
----
-
-## 🛠️ Installation & Running
-
-### 1. Install Dependencies
+### Installation
 ```bash
+# 1. Clone the repository
+git clone https://github.com/Deblina170/WEB-SECURITY-HACKMATRIX-26.git
+cd WEB-SECURITY-HACKMATRIX-26
+
+# 2. Install dependencies
 pip install -r requirements.txt
+
+# 3. (Optional) Set up Environment Variables
+# If omitted, system seamlessly runs in local Air-Gapped SQLite mode!
+cp .env.example .env
 ```
 
-### 2. Run the Automated Test Suite
+### Run the Automated Test Suite
 ```bash
 python test_api.py
 ```
-*All tests pass with 100% assertions across all modules.*
+*Expected Output: `>> ALL TEST CASES PASSED WITH 100% SUCCESS! <<`*
 
-### 3. Launch the Server
+### Start the Platform
 ```bash
-uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+uvicorn main:app --port 8001 --reload
 ```
 
-Then open your browser to:
-- **Web UI**: `http://127.0.0.1:8000/`
-- **Core API Endpoint**: `http://127.0.0.1:8000/analyze?url=https://chase.com`
-- **Swagger Documentation**: `http://127.0.0.1:8000/docs`
+### Access the Platform
+- **Command Center Dashboard**: [http://localhost:8001](http://localhost:8001)
+- **Interactive Swagger Docs**: [http://localhost:8001/docs](http://localhost:8001/docs)
+- **Sample API Audit**: [http://localhost:8001/analyze?url=https://chase.com](http://localhost:8001/analyze?url=https://chase.com)
+
+---
+
+## 8. Disclosures (Libraries, Templates, AI Tools)
+
+- **Libraries & Frameworks**:
+  - `FastAPI` & `Uvicorn`: High-performance asynchronous API framework and ASGI server.
+  - `cryptography`: Cryptographic primitives for parsing ASN.1 and X.509 certificate extensions.
+  - `Pydantic v2`: Strict schema validation and serialization.
+  - `React 18` & `Tailwind CSS`: Loaded via CDN for a zero-build, rapid-prototyping frontend.
+- **Templates**:
+  - No pre-packaged templates were used. The cyber SOC interface was custom-crafted using Tailwind CSS utility classes and dark glassmorphic UI components.
+- **AI Tools**:
+  - **Gemini / Antigravity**: Utilized as an AI pair-programming and debugging assistant for architectural design, regex optimization, and test case verification.
+
+---
+
+## 9. Track
+- **Event**: HackMatrix'26
+- **Track**: **Web Security Track**
+- **Focus Area**: AI-Powered Web Threat Detection & Digital Trust Intelligence
