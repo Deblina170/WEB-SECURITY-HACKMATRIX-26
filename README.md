@@ -25,6 +25,7 @@ ThreatGuard.AI provides a unified, explainable defense layer:
 - **Lexical & Shannon Entropy Heuristics**: Calculates domain randomness, Levenshtein distance against 40+ high-value target brands (PayPal, Chase, Amazon, Microsoft, eMudhra), and scans for unencrypted credential-harvesting forms.
 - **Dual Persistence Architecture (Cloud & Air-Gapped Resiliency)**: Dynamically synchronizes threat intelligence to **Supabase PostgreSQL** when online, while using sub-second TCP socket probes to failover instantly to **local SQLite** in air-gapped or offline environments.
 - **Enterprise SIEM Integration**: One-click generation and download of machine-readable **OASIS STIX 2.1** threat bundles for Splunk, Microsoft Sentinel, and MISP ingestion.
+- **Crowdsourced Telemetry with Anti-Poisoning Consensus**: Features a two-step validation modal and IP-deduplicated consensus voting (Upvote/Downvote telemetry). Prevents accidental flags, troll spamming, and threat database poisoning from diluting the global intelligence stream.
 
 ---
 
@@ -114,7 +115,7 @@ WEB-SECURITY-HACKMATRIX-26/
 ├── threat.py             # Phishing heuristics, brand spoofing, entropy, credential forms
 ├── webscan.py            # Web posture, OWASP security headers, cookie flags, tech leaks
 ├── risk.py               # Weighted multi-vector risk engine & explainable trust scoring
-├── intel.py              # Collaborative threat feed & OASIS STIX 2.1 exporter
+├── intel.py              # Collaborative threat feed, anti-poisoning consensus & STIX 2.1 exporter
 ├── database.py           # Dual persistence (Supabase PostgreSQL + SQLite failover)
 ├── main.py               # FastAPI backend with /analyze, /api/threats, and static routes
 ├── network_utils.py      # Non-blocking async network & DNS socket helper
