@@ -546,7 +546,59 @@ def hybrid_get_recent_feed(limit: int = 15) -> List[Dict[str, Any]]:
     return iocs
 
 def hybrid_save_scan(target_url: str, domain: str, risk_score: int, trust_score: int, risk_level: str, summary: str, full_json: str):
-    """Saves scan to history table."""
+    """
+    Saves scan telemetry with preference for cloud Supabase when online,
+    and automatically registers detected threats (CRITICAL / HIGH) into Supabase IOC feed.
+    Always mirrors to local SQLite for air-gapped continuity.
+    """
+    # 1. Cloud Supabase Preference (When online)
+    sb = get_supabase_client()
+    if sb:
+        try:
+            parsed_json = {}
+            if isinstance(full_json, str):
+                try:
+                    parsed_json = json.loads(full_json)
+                except Exception:
+                    pass
+            elif isinstance(full_json, dict):
+                parsed_json = full_json
+
+            # 1a. Save audit telemetry to cloud Supabase
+            try:
+                sb.table("scan_history").insert({
+                    "url": target_url,
+                    "domain": domain,
+                    "risk_score": risk_score,
+                    "trust_score": trust_score,
+                    "risk_level": risk_level,
+                    "summary": summary,
+                    "scan_result": parsed_json
+                }).execute()
+            except Exception:
+                pass
+
+            # 1b. Autonomous Threat Propagation: If high risk or phishing detected, publish to Supabase IOCs!
+            if risk_level in ["CRITICAL", "HIGH"] or risk_score >= 70:
+                try:
+                    threat_type = "phishing" if risk_score >= 80 else "suspicious_domain"
+                    severity = "critical" if risk_score >= 85 else "high"
+                    sb.table("threat_indicators").upsert({
+                        "indicator": domain,
+                        "indicator_type": "domain",
+                        "threat_type": threat_type,
+                        "severity": severity,
+                        "confidence": min(98, max(75, risk_score)),
+                        "source": "ThreatGuard AI Autonomous Detection",
+                        "description": summary[:250] if summary else f"Automated detection: {risk_level} risk ({risk_score}/100)",
+                        "metadata": {"auto_detected": True, "target_url": target_url, "risk_score": risk_score}
+                    }, on_conflict="indicator").execute()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    # 2. Local SQLite Mirror / Fallback
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -555,6 +607,27 @@ def hybrid_save_scan(target_url: str, domain: str, risk_score: int, trust_score:
             (url, domain, risk_score, trust_score, risk_level, summary, scan_result)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (target_url, domain, risk_score, trust_score, risk_level, summary, full_json))
+
+        # Mirror auto-detected threat into local SQLite IOC table
+        if risk_level in ["CRITICAL", "HIGH"] or risk_score >= 70:
+            threat_type = "phishing" if risk_score >= 80 else "suspicious_domain"
+            severity = "critical" if risk_score >= 85 else "high"
+            cursor.execute("""
+                INSERT INTO threat_indicators
+                (indicator, indicator_type, threat_type, severity, confidence, source, description, metadata)
+                VALUES (?, 'domain', ?, ?, ?, 'ThreatGuard AI Autonomous Detection', ?, ?)
+                ON CONFLICT(indicator) DO UPDATE SET
+                    last_seen = CURRENT_TIMESTAMP,
+                    confidence = MAX(confidence, excluded.confidence)
+            """, (
+                domain,
+                threat_type,
+                severity,
+                min(98, max(75, risk_score)),
+                summary[:250] if summary else f"Automated detection: {risk_level} risk",
+                json.dumps({"auto_detected": True, "target_url": target_url, "risk_score": risk_score})
+            ))
+
         conn.commit()
         conn.close()
     except Exception:

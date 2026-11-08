@@ -20,6 +20,7 @@
 ## 3. Solution
 ThreatGuard.AI provides a unified, explainable defense layer:
 - **Weighted Multi-Vector Risk Engine**: Combines Phishing Heuristics (35%), X.509 Cryptography (25%), Web Posture (20%), and Collaborative Intel (20%) to compute an explainable **Digital Trust Score (0 to 100)** and categorical risk level (`CRITICAL`, `HIGH`, `MODERATE`, `LOW`, `CLEAN`).
+- **Autonomous IOC Propagation**: When a high-risk or phishing domain is identified (Risk Score $\ge 70$), ThreatGuard **automatically promotes and upserts the domain into the Supabase Global Threat Indicators (IOC) table**. Threat telemetry is immediately shared with all analysts globally in real time.
 - **eMudhra CA Incident Intelligence**: Deep cryptographic analysis inspecting RSA key lengths (< 2048-bit flagged as critical), Certificate Transparency (CT) Signed Certificate Timestamps (SCTs), SHA-1 deprecation, and rogue intermediate CAs.
 - **Lexical & Shannon Entropy Heuristics**: Calculates domain randomness, Levenshtein distance against 40+ high-value target brands (PayPal, Chase, Amazon, Microsoft, eMudhra), and scans for unencrypted credential-harvesting forms.
 - **Dual Persistence Architecture (Cloud & Air-Gapped Resiliency)**: Dynamically synchronizes threat intelligence to **Supabase PostgreSQL** when online, while using sub-second TCP socket probes to failover instantly to **local SQLite** in air-gapped or offline environments.
@@ -45,7 +46,7 @@ ThreatGuard.AI provides a unified, explainable defense layer:
 | **Backend & API** | Python 3.10+, FastAPI, Uvicorn (ASGI), Pydantic v2 |
 | **Cryptographic & Network Analysis** | `cryptography` (pyca/cryptography X.509 parser), `urllib3`, `requests`, Python `socket`, `ssl` |
 | **Algorithms** | Shannon Entropy, Levenshtein Distance, Punycode IDN decoder, OWASP Header Grader |
-| **Persistence (Dual Architecture)** | **Cloud:** Supabase (Managed PostgreSQL) <br> **Air-Gapped / Offline:** SQLite3 with automatic reachability failover |
+| **Persistence (Dual Architecture)** | **Cloud:** Supabase (Managed PostgreSQL with Row-Level Security, Autonomous IOC Upserts, Real-Time Telemetry) <br> **Air-Gapped / Offline:** SQLite3 with sub-second TCP reachability probing and zero-latency failover |
 | **Frontend UI** | React 18, Tailwind CSS, Lucide Icons, Cyberpunk Glassmorphism SOC design |
 | **Standards & Specifications** | OASIS STIX 2.1 JSON, CA/B Forum 398-day validity, RFC 5280 (X.509 PKI) |
 
@@ -71,10 +72,40 @@ flowchart TD
     
     subgraph PersistenceDock ["Dual Persistence Layer (database.py)"]
         Verdict --> TCPCheck{"Supabase Online?<br>(TCP Port 443 Probe)"}
-        TCPCheck -- "Online" --> Supa["Supabase Cloud (PostgreSQL)"]
-        TCPCheck -- "Offline / Air-Gapped" --> SQLite["Local SQLite Failover (threat_intel.db)"]
+        TCPCheck -- "Online" --> Supa["Supabase Cloud (PostgreSQL)<br>• Insert scan_history<br>• Upsert threat_indicators (IOC)"]
+        TCPCheck -- "Offline / Air-Gapped" --> SQLite["Local SQLite Failover (threat_intel.db)<br>• Zero-latency local persistence"]
     end
 ```
+
+### Autonomous Threat Ingestion & Supabase Cloud Flow
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Analyst as Security Analyst / Web User
+    participant API as FastAPI Gateway (main.py)
+    participant Engine as Multi-Vector AI Engine
+    participant Supabase as ☁️ Supabase Cloud (PostgreSQL)
+    participant SQLite as 🗄️ Local SQLite Mirror
+
+    Analyst->>API: Audit Target URL (e.g. PayPal Phish, eMudhra CA Weakness)
+    API->>Engine: Run 4-Vector Heuristics & X.509 Cryptographic Audit
+    Engine-->>API: Threat Confirmed: CRITICAL / HIGH Risk (Score >= 70)
+    
+    par Autonomous Cloud Threat Telemetry
+        API->>Supabase: 1a. Log Audit Telemetry to public.scan_history
+        API->>Supabase: 1b. Upsert Domain into public.threat_indicators (Global IOC)
+    and Continuous Air-Gapped Resiliency
+        API->>SQLite: 2a. Mirror Audit Telemetry to local scan_history
+        API->>SQLite: 2b. Mirror Threat Indicator to local threat_indicators
+    end
+
+    API-->>Analyst: Return Digital Trust Score (0-100), Attack Vectors & Remediation
+```
+
+#### 🛡️ Supabase Fault-Tolerance & Resilience Architecture:
+1. **Autonomous IOC Distribution**: As soon as an analyst uncovers a malicious domain, ThreatGuard automatically promotes the indicator to the cloud database (`threat_indicators`), protecting all other analysts globally without requiring manual submissions.
+2. **Isolated Fault Boundaries**: All cloud operations (`scan_history` insert and `threat_indicators` upsert) are housed in separate error-handling boundaries. Cloud timeouts, 503 errors, or rate limits **never crash the server or abort an audit**.
+3. **Sub-Second Heartbeat Probing**: A lightweight non-blocking TCP socket heartbeat checks Supabase reachability (1.2s timeout). When network isolation or an air-gapped environment is detected, ThreatGuard falls back to local SQLite with 0ms downtime.
 
 ### Module Structure
 ```
